@@ -1,0 +1,15 @@
+{
+  "timeZone": "Asia/Taipei",
+  "dependencies": {
+    "libraries": [
+      {
+        "userSymbol": "EnvLib",
+        "version": "1",
+        "libraryId": "1EZyN3rb5QPVE-kmbhm58bZkLp8g2QVAuq2DyLjkAbygf0_JRUQVYtrK9",
+        "developmentMode": false
+      }
+    ]
+  },
+  "exceptionLogging": "STACKDRIVER",
+  "runtimeVersion": "V8"
+}
