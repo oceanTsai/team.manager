@@ -13,7 +13,7 @@ Sprint 回顧自動化：建立 Sprint 資料夾/表單/投影片、定時發布
 | `PublishTask.js` | 觸發器：發布表單、排定提醒觸發器 |
 | `ReminderTask.js` | 觸發器：提醒團隊填寫問卷 |
 | `ReminderNotifier.js` | 組合訊息樣板 + Chat 發送 |
-| `MessageTemplate.js` | 三種通知的訊息格式 |
+| `RetroMessageTemplate.js` | 三種通知的訊息格式 |
 | `TriggerManager.js` | 時間觸發器建立/刪除/查詢 |
 | `SprintFinder.js` | 共用的「找最新 Sprint 資料夾 / 找 Sprint 表單」邏輯 |
 | `清除排程.js` | 維運工具：檢視與清除動態排程，讓流程 reset 重來 |

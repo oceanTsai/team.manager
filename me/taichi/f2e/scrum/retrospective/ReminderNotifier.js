@@ -6,7 +6,7 @@
  *
  * 職責:
  *   集中管理所有 Sprint 回顧相關的通知發送。
- *   組合 MessageTemplate(訊息內容) +
+ *   組合 RetroMessageTemplate(訊息內容) +
  *        ChatNotifier(發送管道)
  *
  * 提供三種通知:
@@ -38,7 +38,7 @@ class ReminderNotifier {
 
     this._personalNotifier = Notify.createChatNotifier(personalUrl);
     this._teamNotifier     = Notify.createChatNotifier(teamUrl);
-    this._template         = new MessageTemplate();
+    this._template         = new RetroMessageTemplate();
   }
 
 

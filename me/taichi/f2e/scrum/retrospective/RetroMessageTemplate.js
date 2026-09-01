@@ -1,12 +1,13 @@
 /**
  * ============================================================
- * MessageTemplate.gs - Sprint 回顧訊息樣板
+ * RetroMessageTemplate.gs - Sprint 回顧訊息樣板
  * ============================================================
  * 📦 屬於 retrospective
  *
  * 職責:
  *   定義 Sprint 回顧相關的通知訊息格式。
- *   繼承 NotifyLib 的 MessageTemplate 抽象基底。
+ *   繼承 NotifyLib 的 MessageTemplate 抽象基底(透過 Notify.getMessageTemplateClass()
+ *   取得)。本類別刻意不叫 MessageTemplate,避免與那個基底同名造成混淆。
  *
  * 提供三種訊息格式:
  *   - sprintCreated(result)   Sprint 已建立
@@ -16,7 +17,7 @@
  */
 
 
-class MessageTemplate extends Notify.getMessageTemplateClass() {
+class RetroMessageTemplate extends Notify.getMessageTemplateClass() {
 
   /**
    * Sprint 已建立的通知訊息
