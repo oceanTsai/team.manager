@@ -2,10 +2,10 @@
  * ============================================================
  * SprintFinder.gs - 共用的「找 Sprint 資料夾/表單」邏輯
  * ============================================================
- * 📦 屬於 SprintProject
+ * 📦 屬於 retrospective
  *
  * 背景:
- *   TriggerManager / prepareSprint / PublishTask / ReminderTask
+ *   TriggerManager / prepareRetro / PublishTask / ReminderTask
  *   原本各自複製貼上一份「掃年份資料夾、比對 MMDD-MMDD、處理跨年」
  *   的邏輯,PublishTask / ReminderTask 也各自複製貼上一份「用 MIME
  *   類型找表單」的邏輯。這裡抽成共用函式,各處改成呼叫這裡。

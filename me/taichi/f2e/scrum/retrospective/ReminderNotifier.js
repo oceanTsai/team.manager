@@ -2,7 +2,7 @@
  * ============================================================
  * ReminderNotifier.gs - Sprint 回顧通知器
  * ============================================================
- * 📦 屬於 SprintProject
+ * 📦 屬於 retrospective
  *
  * 職責:
  *   集中管理所有 Sprint 回顧相關的通知發送。
@@ -46,7 +46,7 @@ class ReminderNotifier {
 
   /**
    * 發送「Sprint 已建立」通知 → 個人頻道
-   * @param {Object} result - SprintService.create() 的回傳
+   * @param {Object} result - RetroService.create() 的回傳
    */
   notifyCreated(result) {
     const message = this._template.sprintCreated(result);

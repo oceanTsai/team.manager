@@ -2,10 +2,10 @@
  * ============================================================
  * 清除排程.gs - 動態排程的檢視與清除工具
  * ============================================================
- * 📦 屬於 SprintProject
+ * 📦 屬於 retrospective
  *
  * 用途:
- *   流程卡住(例如上一輪出錯留下殘留排程,導致 prepareSprint 一直被擋)
+ *   流程卡住(例如上一輪出錯留下殘留排程,導致 prepareRetro 一直被擋)
  *   時,用來查看現況並整個 reset 重來。
  *
  * ⚠️ 只會清除「程式動態建立的一次性排程」:
@@ -13,7 +13,7 @@
  *      reminderTask (提醒團隊)
  *
  *    名單定義在 TriggerManager.DYNAMIC_HANDLERS。
- *    你在 GAS 觸發器頁面手動設定的固定排程(例如每週執行 prepareSprint
+ *    你在 GAS 觸發器頁面手動設定的固定排程(例如每週執行 prepareRetro
  *    的那一個)不在名單內,不會被刪掉。
  *
  * ⚠️ 只動排程,不動 Drive。
@@ -72,7 +72,7 @@ function listAllTriggers() {
 /**
  * 【可執行】清除所有動態排程,讓流程回到乾淨狀態
  *
- * 清除後可以重新執行 prepareSprint() 建立下一個 Sprint。
+ * 清除後可以重新執行 prepareRetro() 建立下一個 Sprint。
  * Drive 上的資料夾與表單不受影響。
  *
  * @returns {number} 實際刪除的排程數量
@@ -93,7 +93,7 @@ function clearDynamicTriggers() {
   if (targets.length > 0) {
     Logger.log(`✅ 已清除 ${targets.length} 個動態排程`);
     Logger.log('固定排程未受影響,Drive 上的資料夾與表單也都保留');
-    Logger.log('現在可以重新執行 prepareSprint() 建立下一個 Sprint');
+    Logger.log('現在可以重新執行 prepareRetro() 建立下一個 Sprint');
   } else {
     Logger.log('沒有動態排程需要清除,流程本來就是乾淨的');
   }

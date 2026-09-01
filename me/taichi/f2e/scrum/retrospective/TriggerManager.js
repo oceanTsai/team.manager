@@ -2,7 +2,7 @@
  * ============================================================
  * TriggerManager.gs - Time Trigger 管理工具
  * ============================================================
- * 📦 屬於 SprintProject
+ * 📦 屬於 retrospective
  *
  * 職責:
  *   - 計算發布/提醒時間
@@ -41,7 +41,7 @@ class TriggerManager {
    * 程式動態建立的一次性排程,對應的 handler 函式名稱。
    *
    * 觸發器物件查不到「這是一次性還是週期性」,只能用函式名稱分辨。
-   * 不在這份名單裡的(例如你在 GAS 介面手動設定、每週執行 prepareSprint
+   * 不在這份名單裡的(例如你在 GAS 介面手動設定、每週執行 prepareRetro
    * 的那個固定排程)一律視為固定排程,不會被自動流程清除。
    */
   static get DYNAMIC_HANDLERS() { return ['publishTask', 'reminderTask']; }

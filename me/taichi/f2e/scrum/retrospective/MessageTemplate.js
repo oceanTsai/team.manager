@@ -2,7 +2,7 @@
  * ============================================================
  * MessageTemplate.gs - Sprint 回顧訊息樣板
  * ============================================================
- * 📦 屬於 SprintProject
+ * 📦 屬於 retrospective
  *
  * 職責:
  *   定義 Sprint 回顧相關的通知訊息格式。
@@ -20,7 +20,7 @@ class MessageTemplate extends Notify.getMessageTemplateClass() {
 
   /**
    * Sprint 已建立的通知訊息
-   * @param {Object} result - SprintService.create() 的回傳
+   * @param {Object} result - RetroService.create() 的回傳
    * @param {string} result.sprintName
    * @param {string} result.startDate
    * @param {string} result.endDate

@@ -1,8 +1,8 @@
 /**
  * ============================================================
- * prepareSprint.gs - Sprint 回顧準備:執行入口
+ * prepareRetro.gs - Sprint 回顧準備:執行入口
  * ============================================================
- * 唯一執行函式:prepareSprint(e)
+ * 唯一執行函式:prepareRetro(e)
  *
  * 📦 本專案依賴外部 Library:
  *   - InfraLib(識別碼:Infra)
@@ -35,7 +35,7 @@ const SPRINT_OPTIONS = {
  *                       有值=排程觸發,無值=手動執行
  * @returns {Object|null} 建立結果摘要,或 null(跳過)
  */
-function prepareSprint(e) {
+function prepareRetro(e) {
   try {
     const isScheduled = !!(e && e.triggerUid);
     let result = null;
@@ -48,11 +48,11 @@ function prepareSprint(e) {
       _assertNoPendingSprint();
 
       // 1. 建立 Sprint
-      result = new SprintService(SPRINT_OPTIONS).create();
-      Logger.log('📦 SprintService 回傳:' + JSON.stringify(result));
+      result = new RetroService(SPRINT_OPTIONS).create();
+      Logger.log('📦 RetroService 回傳:' + JSON.stringify(result));
 
       if (!result || !result.sprintName) {
-        throw new Error('SprintService.create() 回傳結果不正確,請檢查 SprintService.gs');
+        throw new Error('RetroService.create() 回傳結果不正確,請檢查 RetroService.gs');
       }
 
       // 2. 發送 Chat 通知「已建立」
@@ -145,10 +145,10 @@ function _formatDate(date) {
 /* ========== 🧪 測試函式 ========== */
 
 function testScheduledRun() {
-  prepareSprint({ triggerUid: 'test-trigger' });
+  prepareRetro({ triggerUid: 'test-trigger' });
 }
 
 
 function testValidate() {
-  new SprintService(SPRINT_OPTIONS).validate();
+  new RetroService(SPRINT_OPTIONS).validate();
 }
