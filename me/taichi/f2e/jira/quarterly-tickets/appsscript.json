@@ -1,0 +1,24 @@
+{
+  "timeZone": "Asia/Taipei",
+  "exceptionLogging": "STACKDRIVER",
+  "runtimeVersion": "V8",
+  "dependencies": {
+    "libraries": [
+      {
+        "userSymbol": "JiraIdentityLib",
+        "libraryId": "TODO_填入建立jira-identity-lib後的scriptId",
+        "version": "1"
+      },
+      {
+        "userSymbol": "NotifyEnvLib",
+        "libraryId": "TODO_填入建立notify-env-lib後的scriptId",
+        "version": "1"
+      },
+      {
+        "userSymbol": "Notify",
+        "libraryId": "1P0w2KWO77JiugnqrcjyRJn6wxDSWmHuazzFUL2446vb2VISYWrluYpib",
+        "version": "3"
+      }
+    ]
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "timeZone": "Asia/Taipei",
+  "exceptionLogging": "STACKDRIVER",
+  "runtimeVersion": "V8",
+  "dependencies": {
+    "libraries": [
+      {
+        "userSymbol": "Infra",
+        "libraryId": "17AFWXtq5xxqn8SDmL4ovnaGXCBvpInEPDzIf8Te_gFXik0qKOViI13Oi",
+        "version": "4"
+      },
+      {
+        "userSymbol": "Notify",
+        "libraryId": "1P0w2KWO77JiugnqrcjyRJn6wxDSWmHuazzFUL2446vb2VISYWrluYpib",
+        "version": "3"
+      }
+    ]
+  }
+}

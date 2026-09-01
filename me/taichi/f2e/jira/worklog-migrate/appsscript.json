@@ -1,0 +1,15 @@
+{
+  "timeZone": "Asia/Taipei",
+  "dependencies": {
+    "libraries": [
+      {
+        "userSymbol": "JiraIdentityLib",
+        "version": "1",
+        "libraryId": "TODO_填入建立jira-identity-lib後的scriptId",
+        "developmentMode": false
+      }
+    ]
+  },
+  "exceptionLogging": "STACKDRIVER",
+  "runtimeVersion": "V8"
+}
