@@ -62,14 +62,28 @@ class PublishTaskRunner {
     });
 
     // 5. 排定提醒觸發器(結束日直接來自 findLatestSprintFolder,不用另外反推)
+    //    先清掉既有的提醒排程,確保這次執行完剛好只有一個 ——
+    //    重複執行 publishTask 時才不會累積出多張提醒卡
     const endDateStr = this._formatDate(sprintInfo.endDate);
+    this.tm.cancelReminders();
     this.tm.scheduleReminder(endDateStr);
 
-    // 6. 刪除自己這個一次性觸發器(執行完不會自動消失,不清會累積)
-    //    只刪自己,不要用 cancel() 全刪 —— 那會連別的 Sprint 尚未到期的
-    //    publishTask 觸發器一起刪掉
+    // 6. 清掉這次發布對應的 publishTask 觸發器
+    //    (一次性觸發器執行完不會自動消失,不清會累積)
+    //
+    //    排程觸發:精確刪自己就好。
+    //    手動執行:沒有 e,也就沒有「自己」可刪。但剛才已經代替那個待處理的
+    //             觸發器把事情做完了,若不清掉,它之後真的觸發時會再跑一次
+    //             整個流程、再排一次提醒(團隊收到兩張卡),而且會擋住
+    //             下一次 prepareRetro。
+    //             此時 cancel() 全刪是安全的 —— prepareRetro 的
+    //             _assertNoPendingSprint() 保證同時只會有一個 Sprint 在進行,
+    //             所以待處理的 publishTask 觸發器一定就是這個 Sprint 的。
     if (e && e.triggerUid) {
       this.tm.deleteByUid(e.triggerUid);
+    } else {
+      Logger.log('⚠️ 手動執行:改為清除所有待處理的 publishTask 觸發器');
+      this.tm.cancel();
     }
 
     Logger.log('🎉 PublishTask 完成');
@@ -104,6 +118,7 @@ function publishTask(e) {
     new PublishTaskRunner().run(e);
   } catch (error) {
     Logger.log(`❌ publishTask 錯誤:${error.message}`);
+    notifyFailure('publishTask', '發布回顧表單', error);
     throw error;
   }
 }

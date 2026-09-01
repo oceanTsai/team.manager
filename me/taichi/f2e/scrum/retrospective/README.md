@@ -14,13 +14,36 @@ Sprint 回顧自動化：建立 Sprint 資料夾/表單/投影片、定時發布
 | `ReminderTask.js` | 觸發器：提醒團隊填寫問卷 |
 | `ReminderNotifier.js` | 組合訊息樣板 + Chat 發送 |
 | `RetroMessageTemplate.js` | 三種通知的訊息格式 |
+| `FailureNotifier.js` | 流程失敗時發錯誤通知到個人頻道 |
 | `TriggerManager.js` | 時間觸發器建立/刪除/查詢 |
 | `SprintFinder.js` | 共用的「找最新 Sprint 資料夾 / 找 Sprint 表單」邏輯 |
 | `清除排程.js` | 維運工具：檢視與清除動態排程，讓流程 reset 重來 |
 
+## 出事的時候會怎樣
+
+三個入口（`prepareRetro` / `publishTask` / `reminderTask`）發生例外時，除了寫執行記錄，還會**發一張錯誤卡片到個人 Chat 頻道**，內容包含：
+
+- 哪一步失敗、失敗的函式名稱、錯誤訊息
+- 逐步的處理指引（含「修好後要重跑哪一個函式」）
+- 兩顆按鈕：**開啟 Apps Script 專案**、**開啟 scrum 資料夾**，不用自己找連結
+
+`FailureNotifier` 刻意**不透過 `ReminderNotifier`**——後者的建構子要求兩個 webhook 都設定，萬一失敗原因正好是「webhook 沒設定」，拿它回報會再爆一次。它也全程包 try/catch，**自己絕不拋錯**，以免蓋掉原本要回報的錯誤。
+
+### 失敗後怎麼恢復
+
+流程失敗時，那次觸發過的排程會留下來（一次性排程執行完不會自動消失，而自我刪除是流程的最後一步）。這是**刻意的**：殘留排程會讓下一次 `prepareRetro` 被 `_assertNoPendingSprint()` 擋住，強迫人先把問題處理完，那次回顧才不會被跳過。
+
+標準恢復流程：
+
+1. 收到錯誤通知 → 依訊息修正原因（多半在 Drive 上，例如表單重複、資料夾缺漏）
+2. 點通知上的按鈕進 Apps Script → 手動重跑失敗的那個函式（`publishTask()` 或 `reminderTask()`）
+3. **手動重跑會順便把殘留排程清乾淨**，流程即恢復
+
+`publishTask` 與 `ReminderTask` 都做了同樣處理：排程觸發時精確刪自己（`deleteByUid`），手動執行時因為沒有「自己」可刪，改為清除該類型所有待處理排程——因為手動執行等於已經代替那個排程把事情做完了。
+
 ## 維運工具：卡住時怎麼 reset
 
-流程卡住時（例如上一輪出錯留下殘留排程，導致 `prepareRetro` 一直被擋），在 GAS 上方的「選擇要執行的函式」選這兩個：
+上面的恢復流程走不通時（例如根本不想補跑，只想整個重來），在 GAS 上方的「選擇要執行的函式」選這兩個：
 
 | 函式 | 作用 |
 |---|---|
@@ -146,12 +169,13 @@ GAS 的一次性觸發器**無法夾帶參數**（不能寫成 `.at(date).withAr
 - `ReminderNotifier` 建構子要求 `RETRO_CHAT_WEBHOOK_URL` 和 `B_TEAM_RETRO_WEBHOOK` 兩個指令碼屬性都要設定，即使某些通知方法只會用到其中一個。
 - `PublishTask.js`、`prepareRetro.js`、`RetroService.js` 各自有一份邏輯相同的 `_formatDate()`，尚未合併成共用函式。
 
-### D 組：失敗時沒有通知，且無法自動復原
+### D 組：失敗後的復原
 
-三個入口（`prepareRetro` / `publishTask` / `reminderTask`）的 catch 都只做 `Logger.log` + rethrow，`ReminderNotifier` 也沒有對應的錯誤通知方法。失敗時只能靠「手動去看執行記錄」或「Apps Script 內建寄給指令碼擁有者的觸發器失敗 email」得知，團隊頻道完全不會知道。
-
-- **部分失敗會留下不一致狀態**：`prepareRetro` 的順序是 `create()` → `notifyCreated()` → `schedulePublish()`。若在第 2 步失敗（例如 webhook 指令碼屬性未設定，`ReminderNotifier` 建構子直接拋錯），資料夾／表單／投影片都已建立，但**發布觸發器沒排定**。下週 `_shouldRunToday()` 會判定「還沒到下一個 Sprint」而跳過，於是該 Sprint 靜默停擺，不再產生任何錯誤訊息。
-- **重跑會被擋住**：`DriveClient.createFolder()` 預設 `allowDuplicate = false`，同名資料夾已存在就拋錯，所以手動重跑 `prepareRetro()` 無法補救，必須先手動刪掉 Drive 上的資料夾。
+- **`prepareRetro` 部分失敗會留下不一致狀態**：順序是 `create()` → `notifyCreated()` → `schedulePublish()`。若在第 2 步失敗（例如 webhook 指令碼屬性未設定，`ReminderNotifier` 建構子直接拋錯），資料夾／表單／投影片都已建立，但**發布觸發器沒排定**。現在會收到錯誤通知，但下週 `_shouldRunToday()` 仍會判定「還沒到下一個 Sprint」而跳過，該 Sprint 不會自動補救。
+- **重跑會被擋住**：`DriveClient.createFolder()` 預設 `allowDuplicate = false`，同名資料夾已存在就拋錯，所以手動重跑 `prepareRetro()` 無法補救上一項，必須先手動刪掉 Drive 上的資料夾。可能的修法是讓建立變成可重複執行（資料夾已存在就沿用、表單投影片檢查存在才複製）。
 - **通知發送失敗會被吞掉**：`Notifier._post()` 內部 catch 住 HTTP 錯誤並回傳 `false`，只寫 log 不拋錯。所以 webhook 失效時流程照常走完，但沒有人收到任何通知，也不會有錯誤。
 
-可能的修法方向：在 `ReminderNotifier` 加 `notifyError(step, error)` 發到個人頻道，並把三個入口的 catch 改成先發通知再 rethrow（需注意通知失敗時不要再引發新的例外）。
+### R 組：其他待處理
+
+- **`_calcNextSprint()` 沒檢查算出的日期是否在未來**。若 `prepareRetro` 停擺數週後才恢復，會建立一個起訖日都在過去的 Sprint，`schedulePublish()` 也會拿過去的時間去排排程。（Apps Script 對過去時間的 `.at()` 是接受並儘快執行而非拒絕——此為文件推論，未實測。）
+- **`testScheduledRun()` / `testReminderNotifier()` 名為測試，實際是完整正式執行**：會建立真的 Drive 資料夾、複製範本、發真的 Chat 卡片、裝真的排程。它們在 GAS 的函式下拉選單裡跟 `clearDynamicTriggers()` 等維運函式並列，reset 時手滑選錯會多建一個 Sprint。

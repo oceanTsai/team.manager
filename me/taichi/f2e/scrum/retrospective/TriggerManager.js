@@ -107,6 +107,24 @@ class TriggerManager {
   }
 
   /**
+   * 取消所有 reminderTask 觸發器
+   *
+   * 用途:排定新的提醒之前先清掉舊的,確保同一時間只會有一個提醒排程。
+   * 沒有這一步的話,重複執行 publishTask 會累積出多個提醒排程,
+   * 團隊就會收到多張提醒卡。
+   *
+   * @returns {number} 刪除的數量
+   */
+  cancelReminders() {
+    const triggers = ScriptApp.getProjectTriggers()
+      .filter((t) => t.getHandlerFunction() === 'reminderTask');
+
+    triggers.forEach((t) => ScriptApp.deleteTrigger(t));
+    Logger.log(`🗑️ 已刪除 ${triggers.length} 個提醒觸發器`);
+    return triggers.length;
+  }
+
+  /**
    * 列出現有 publishTask 觸發器(debug 用)
    * @returns {GoogleAppsScript.Script.Trigger[]}
    */

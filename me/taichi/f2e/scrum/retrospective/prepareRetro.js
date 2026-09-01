@@ -65,6 +65,7 @@ function prepareRetro(e) {
     return result;
   } catch (error) {
     Logger.log(`❌ 錯誤:${error.message}`);
+    notifyFailure('prepareRetro', '建立下一個 Sprint 回顧', error);
     throw error;
   }
 }
@@ -100,7 +101,12 @@ function _assertNoPendingSprint() {
     throw new Error(
       `上一個 Sprint 流程尚未完成(待處理排程:${names})。\n` +
       '同時進行兩個 Sprint 會讓發布與提醒指向錯誤的 Sprint,因此中止。\n' +
-      '請等流程跑完,或確認狀況後清除動態排程再重試。'
+      '處理方式:\n' +
+      '  1. 若流程還在正常進行中,等它跑完即可(提醒發送後排程會自行清除)\n' +
+      '  2. 若上一輪失敗留下殘留,先修正失敗原因,再手動重跑 publishTask()\n' +
+      '     或 reminderTask() —— 手動執行會順便把殘留排程清乾淨\n' +
+      '  3. 要直接重來的話,執行 listAllTriggers() 查看現況,\n' +
+      '     再執行 clearDynamicTriggers() 清除'
     );
   }
 }

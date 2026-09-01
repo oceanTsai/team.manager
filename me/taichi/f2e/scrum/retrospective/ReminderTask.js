@@ -53,9 +53,19 @@ class ReminderTaskRunner {
       formUrl:    this.form.getPublishedUrl(formFile.getId()),
     });
 
-    // 4. 自我刪除觸發器
+    // 4. 清掉這次提醒對應的 reminderTask 觸發器
+    //    (一次性觸發器執行完不會自動消失,不清會累積)
+    //
+    //    排程觸發:精確刪自己就好。
+    //    手動執行:沒有 e,也就沒有「自己」可刪。但剛才已經代替那個待處理的
+    //             觸發器把提醒發出去了,若不清掉,它之後真的觸發時會再發一次,
+    //             而且會擋住下一次 prepareRetro。
+    //             做法與 PublishTask 對稱,讓手動補跑就能自己收乾淨。
     if (e && e.triggerUid) {
       this.tm.deleteByUid(e.triggerUid);
+    } else {
+      Logger.log('⚠️ 手動執行:改為清除所有待處理的 reminderTask 觸發器');
+      this.tm.cancelReminders();
     }
 
     Logger.log('🎉 ReminderTask 完成');
@@ -78,6 +88,7 @@ function reminderTask(e) {
     new ReminderTaskRunner().run(e);
   } catch (error) {
     Logger.log(`❌ reminderTask 錯誤:${error.message}`);
+    notifyFailure('reminderTask', '提醒團隊填寫問卷', error);
     throw error;
   }
 }
