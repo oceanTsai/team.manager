@@ -35,6 +35,18 @@ class TriggerManager {
   static get REMINDER_HOUR() { return 10; }
 
 
+  /* ========== 🏷️ 動態排程名單 ========== */
+
+  /**
+   * 程式動態建立的一次性排程,對應的 handler 函式名稱。
+   *
+   * 觸發器物件查不到「這是一次性還是週期性」,只能用函式名稱分辨。
+   * 不在這份名單裡的(例如你在 GAS 介面手動設定、每週執行 prepareSprint
+   * 的那個固定排程)一律視為固定排程,不會被自動流程清除。
+   */
+  static get DYNAMIC_HANDLERS() { return ['publishTask', 'reminderTask']; }
+
+
   /* ========== 🏭 公開方法 ========== */
 
   /**
@@ -108,6 +120,19 @@ class TriggerManager {
     });
 
     return triggers;
+  }
+
+  /**
+   * 列出所有「待處理的動態排程」(publishTask + reminderTask)
+   *
+   * 一個 Sprint 從建立到提醒完成的期間,至少會有其中一種排程存在。
+   * 回傳空陣列代表上一個 Sprint 流程已經走完。
+   *
+   * @returns {GoogleAppsScript.Script.Trigger[]}
+   */
+  listPending() {
+    return ScriptApp.getProjectTriggers()
+      .filter((t) => TriggerManager.DYNAMIC_HANDLERS.includes(t.getHandlerFunction()));
   }
 
   /**

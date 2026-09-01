@@ -16,6 +16,18 @@ Sprint 回顧自動化：建立 Sprint 資料夾/表單/投影片、定時發布
 | `MessageTemplate.js` | 三種通知的訊息格式 |
 | `TriggerManager.js` | 時間觸發器建立/刪除/查詢 |
 | `SprintFinder.js` | 共用的「找最新 Sprint 資料夾 / 找 Sprint 表單」邏輯 |
+| `清除排程.js` | 維運工具：檢視與清除動態排程，讓流程 reset 重來 |
+
+## 維運工具：卡住時怎麼 reset
+
+流程卡住時（例如上一輪出錯留下殘留排程，導致 `prepareSprint` 一直被擋），在 GAS 上方的「選擇要執行的函式」選這兩個：
+
+| 函式 | 作用 |
+|---|---|
+| `listAllTriggers()` | 列出目前所有排程，標示哪些是動態排程（會被清除）、哪些是固定排程（保留）。**不會刪東西**，先看清楚用 |
+| `clearDynamicTriggers()` | 清除所有動態排程，之後即可重新執行 `prepareSprint()` |
+
+兩者都**只動排程、不動 Drive** —— 資料夾、表單、投影片都會保留。刪除 Drive 資料是不可逆操作，應由人確認後手動處理。
 
 ## 程序運作時序圖
 
@@ -110,14 +122,22 @@ Sprint 資料夾**依「開始日」的年份**歸檔，所以 `1228-0108`（202
 
 `SprintService._listAllSprints()` 共用同一個 `listRecentSprintFolders()`，兩邊不再各自實作。
 
+## 為什麼不允許兩個 Sprint 並存
+
+GAS 的一次性觸發器**無法夾帶參數**（不能寫成 `.at(date).withArgs('1228-0108')`），觸發時拿到的事件物件只有 `triggerUid`，沒有任何辦法知道「當初是為了哪個 Sprint 排的」。因此 `PublishTask` / `ReminderTask` 只能在觸發當下重新去 Drive 找「結束日最晚的 Sprint」。
+
+這代表：只要系統裡同時存在兩個進行中的 Sprint，它們就會處理到錯的那一個——舊 Sprint 的表單沒發布、團隊沒收到提醒，新 Sprint 的表單反而提早兩週被發布。
+
+解法不是讓程式有能力處理這種狀態（實務上沒有同時跑兩個 Sprint 回顧的需求），而是**讓它不可能發生**：
+
+- `prepareSprint()` 在建立前呼叫 `_assertNoPendingSprint()`，只要還有待處理的動態排程（`publishTask` 或 `reminderTask`）就中止並報錯。排程觸發也一樣擋——正常情況這時不該有殘留排程，有的話代表上一輪出錯，停下來比繼續把狀況搞亂好。
+- `PublishTask` 執行完改用 `deleteByUid(e.triggerUid)` **只刪自己**，不再用 `cancel()` 無差別刪掉所有 `publishTask` 觸發器（與 `ReminderTask` 的既有做法一致）。
+
+動態排程與固定排程靠**函式名稱**分辨，名單在 `TriggerManager.DYNAMIC_HANDLERS`。觸發器物件查不到「一次性或週期性」，所以只能這樣判斷；你在 GAS 介面手動設定、每週執行 `prepareSprint` 的那個固定排程不在名單內，不會被碰到。
+
+`TriggerManager.cancel()` 保留為手動工具（`cancelPublish()`），不再被自動流程呼叫。
+
 ## 已知限制（尚未修正）
-
-### B 組：觸發器沒有攜帶 Sprint 身份
-
-根因相同——GAS 的一次性觸發器無法夾帶參數，所以觸發時只能「重新推導最新 Sprint」。
-
-- `TriggerManager.cancel()` 會刪掉**所有** `publishTask` 觸發器而不分屬於哪個 Sprint。若手動提前建立下一個 Sprint，舊 Sprint 的 publishTask 觸發時會把新 Sprint 尚未到期的觸發器一併刪除，導致新表單永遠不會發布。
-- `PublishTask` / `ReminderTask` 觸發時重新推導最新 Sprint，而非沿用排定當下的那個。若期間手動建立了新 Sprint，通知會指向錯誤的 Sprint（團隊會收到還沒發布的表單連結）。
 
 ### C 組：不會中斷流程的小問題
 

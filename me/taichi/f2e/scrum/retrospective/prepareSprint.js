@@ -44,6 +44,9 @@ function prepareSprint(e) {
     if (isScheduled && !_shouldRunToday()) {
       Logger.log('⏸️ 本週不執行(尚未到下一個 Sprint 預定開始日)');
     } else {
+      // 0. 確認上一個 Sprint 流程已走完(不允許兩個 Sprint 並存)
+      _assertNoPendingSprint();
+
       // 1. 建立 Sprint
       result = new SprintService(SPRINT_OPTIONS).create();
       Logger.log('📦 SprintService 回傳:' + JSON.stringify(result));
@@ -68,6 +71,39 @@ function prepareSprint(e) {
 
 
 /* ========== 🔍 判斷邏輯 ========== */
+
+/**
+ * 確認沒有未完成的 Sprint 流程,有的話中止建立
+ *
+ * 一個 Sprint 從建立到提醒發送完畢的期間,系統裡會有 publishTask 或
+ * reminderTask 排程待處理。這段期間若再建立一個新的 Sprint,
+ * PublishTask / ReminderTask 會因為是「重新推導最新 Sprint」
+ * (一次性觸發器無法攜帶參數,只能現場去 Drive 找結束日最晚的那個)
+ * 而處理到新建立的那一個,造成:
+ *   - 舊 Sprint 的表單沒發布、團隊沒收到提醒
+ *   - 新 Sprint 的表單提早兩週被發布
+ *
+ * 與其讓程式有能力處理這種混亂狀態,不如直接擋掉 —— 實務上不會有
+ * 同時進行兩個 Sprint 回顧的需求。
+ *
+ * 排程觸發也一樣擋:正常情況下這時不該有待處理排程,若有代表上一輪
+ * 出錯留下殘留,這時停下來報錯比繼續把狀況搞亂好。
+ *
+ * @private
+ * @throws {Error} 還有待處理的動態排程時
+ */
+function _assertNoPendingSprint() {
+  const pending = new TriggerManager().listPending();
+
+  if (pending.length > 0) {
+    const names = pending.map((t) => t.getHandlerFunction()).join('、');
+    throw new Error(
+      `上一個 Sprint 流程尚未完成(待處理排程:${names})。\n` +
+      '同時進行兩個 Sprint 會讓發布與提醒指向錯誤的 Sprint,因此中止。\n' +
+      '請等流程跑完,或確認狀況後清除動態排程再重試。'
+    );
+  }
+}
 
 /**
  * 判斷今天是否該執行(用於排程觸發時)

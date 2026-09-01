@@ -65,8 +65,12 @@ class PublishTaskRunner {
     const endDateStr = this._formatDate(sprintInfo.endDate);
     this.tm.scheduleReminder(endDateStr);
 
-    // 6. 清除所有 publishTask 觸發器(包含排程中的和自己)
-    this.tm.cancel();
+    // 6. 刪除自己這個一次性觸發器(執行完不會自動消失,不清會累積)
+    //    只刪自己,不要用 cancel() 全刪 —— 那會連別的 Sprint 尚未到期的
+    //    publishTask 觸發器一起刪掉
+    if (e && e.triggerUid) {
+      this.tm.deleteByUid(e.triggerUid);
+    }
 
     Logger.log('🎉 PublishTask 完成');
   }
