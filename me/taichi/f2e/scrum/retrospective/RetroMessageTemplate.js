@@ -47,21 +47,32 @@ class RetroMessageTemplate extends Notify.getMessageTemplateClass() {
   }
 
   /**
-   * 表單已發布的通知訊息
+   * 表單已發布的通知訊息(給主管確認用,不是給填寫者)
+   *
+   * 這張卡片發到個人頻道,用途是讓表單建立者在團隊收到提醒之前,
+   * 先確認發布狀態、看看還有沒有要調整。所以:
+   *   - 副標寫的是「團隊什麼時候會收到通知」,讓人知道還剩多少時間
+   *   - 按鈕給兩個視角:預覽(團隊會看到的樣子) + 調整(編輯畫面)
+   * 不要寫成「請盡快完成」那種對填寫者說的話 —— 讀者不是填寫者。
+   *
    * @param {Object} info
-   * @param {string} info.sprintName
-   * @param {string} info.formUrl
+   * @param {string} info.sprintName - Sprint 名稱,例如 '0608-0619'
+   * @param {string} info.previewUrl - 填寫網址(團隊視角預覽用)
+   * @param {string} info.editUrl    - 編輯網址(要調整時用)
+   * @param {string} info.reminderAt - 團隊收到提醒的時間,例如 '2026/06/18 10:00'
    * @returns {Object} Message 結構
    */
   formPublished(info) {
     return {
       title:    `🎉 Sprint ${info.sprintName} 問卷已發布`,
-      subtitle: '表單已開放填寫，請盡快完成',
+      subtitle: `團隊將於 ${info.reminderAt} 收到填寫提醒`,
       fields: [
-        { label: '📝 填寫表單', value: info.sprintName, link: info.formUrl },
+        { label: '📝 表單',         value: info.sprintName, link: info.previewUrl },
+        { label: '⏰ 團隊提醒時間', value: info.reminderAt                        },
       ],
       actions: [
-        { text: '前往填寫', url: info.formUrl },
+        { text: '預覽填寫畫面', url: info.previewUrl },
+        { text: '調整表單',     url: info.editUrl    },
       ],
     };
   }
@@ -75,7 +86,7 @@ class RetroMessageTemplate extends Notify.getMessageTemplateClass() {
    */
   surveyReminder(info) {
     return {
-      title:    `📋 Sprint ${info.sprintName} 回顧問卷提醒`,
+      title:    `📋 Sprint ${info.sprintName} 回顧問卷填寫提醒`,
       subtitle: '請記得填寫回顧問卷',
       fields: [
         { label: '📝 填寫表單', value: info.sprintName, link: info.formUrl },

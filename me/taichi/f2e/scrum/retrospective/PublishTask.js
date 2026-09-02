@@ -55,18 +55,23 @@ class PublishTaskRunner {
       Logger.log('✅ 表單已發布');
     }
 
-    // 4. 發 Chat 通知
-    this.notifier.notifyPublished({
-      sprintName: sprintInfo.name,
-      formUrl:    formFile.getUrl(),
-    });
-
-    // 5. 排定提醒觸發器(結束日直接來自 findLatestSprintFolder,不用另外反推)
+    // 4. 排定提醒觸發器(結束日直接來自 findLatestSprintFolder,不用另外反推)
     //    先清掉既有的提醒排程,確保這次執行完剛好只有一個 ——
     //    重複執行 publishTask 時才不會累積出多張提醒卡
     const endDateStr = this._formatDate(sprintInfo.endDate);
     this.tm.cancelReminders();
     this.tm.scheduleReminder(endDateStr);
+
+    // 5. 發 Chat 通知給主管(個人頻道)
+    //    這張卡是給主管確認用的,不是給填寫者:告訴他團隊什麼時候會收到提醒、
+    //    在那之前可以用「預覽」看團隊視角、用「調整」進編輯畫面。
+    //    所以要在排定提醒之後才發,才知道提醒時間。
+    this.notifier.notifyPublished({
+      sprintName: sprintInfo.name,
+      previewUrl: this.form.getPublishedUrl(formFile.getId()),
+      editUrl:    formFile.getUrl(),
+      reminderAt: this._formatDateTime(this.tm.reminderDateFor(endDateStr)),
+    });
 
     // 6. 清掉這次發布對應的 publishTask 觸發器
     //    (一次性觸發器執行完不會自動消失,不清會累積)
@@ -103,6 +108,16 @@ class PublishTaskRunner {
     const m = String(date.getMonth() + 1).padStart(2, '0');
     const d = String(date.getDate()).padStart(2, '0');
     return `${y}/${m}/${d}`;
+  }
+
+  /**
+   * 格式化成「2026/06/18 10:00」,給通知卡片顯示提醒時間用
+   * @private
+   */
+  _formatDateTime(date) {
+    const hh = String(date.getHours()).padStart(2, '0');
+    const mm = String(date.getMinutes()).padStart(2, '0');
+    return `${this._formatDate(date)} ${hh}:${mm}`;
   }
 }
 

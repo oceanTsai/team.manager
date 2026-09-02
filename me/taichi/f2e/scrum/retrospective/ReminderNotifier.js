@@ -103,7 +103,9 @@ function testReminderNotifier() {
   // 測試個人頻道:已發布
   notifier.notifyPublished({
     sprintName: '0608-0619',
-    formUrl:    'https://docs.google.com/forms/',
+    previewUrl: 'https://docs.google.com/forms/d/e/FAKE/viewform',
+    editUrl:    'https://docs.google.com/forms/d/FAKE/edit',
+    reminderAt: '2026/06/18 10:00',
   });
 
   // 測試團隊頻道:提醒填寫

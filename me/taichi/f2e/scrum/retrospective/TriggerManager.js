@@ -107,6 +107,23 @@ class TriggerManager {
   }
 
   /**
+   * 算出提醒的觸發時間(只計算,不排定)
+   *
+   * 用途:「問卷已發布」通知要告訴主管「團隊什麼時候會收到提醒」,
+   * 需要在還沒排定之前就先拿到這個時間。
+   *
+   * @param {string} endDateStr - Sprint 結束日,格式 "2026/05/08"
+   * @returns {Date}
+   */
+  reminderDateFor(endDateStr) {
+    return this._calcDate(
+      endDateStr,
+      TriggerManager.REMINDER_DAYS_BEFORE,
+      TriggerManager.REMINDER_HOUR
+    );
+  }
+
+  /**
    * 取消所有 reminderTask 觸發器
    *
    * 用途:排定新的提醒之前先清掉舊的,確保同一時間只會有一個提醒排程。
