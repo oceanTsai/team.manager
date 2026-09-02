@@ -46,10 +46,10 @@ class ReminderNotifier {
 
   /**
    * 發送「Sprint 已建立」通知 → 個人頻道
-   * @param {Object} result - RetroService.create() 的回傳
+   * @param {Object} result - 建立結果(sprintName / startDate / endDate / folderUrl / formUrl / slideUrl)
    */
   notifyCreated(result) {
-    const message = this._template.sprintCreated(result);
+    const message = this._template.renderSprintCreated(result);
     const ok = this._personalNotifier.sendCard(message);
     this._log('notifyCreated', result.sprintName, ok);
   }
@@ -59,7 +59,7 @@ class ReminderNotifier {
    * @param {{ sprintName: string, formUrl: string }} info
    */
   notifyPublished(info) {
-    const message = this._template.formPublished(info);
+    const message = this._template.renderFormPublished(info);
     const ok = this._personalNotifier.sendCard(message);
     this._log('notifyPublished', info.sprintName, ok);
   }
@@ -69,7 +69,7 @@ class ReminderNotifier {
    * @param {{ sprintName: string, formUrl: string }} info
    */
   notifyReminder(info) {
-    const message = this._template.surveyReminder(info);
+    const message = this._template.renderSurveyReminder(info);
     const ok = this._teamNotifier.sendCard(message);
     this._log('notifyReminder', info.sprintName, ok);
   }
@@ -84,33 +84,9 @@ class ReminderNotifier {
   }
 }
 
-
-/* ========== 🧪 測試函式 ========== */
-
-function testReminderNotifier() {
-  const notifier = new ReminderNotifier();
-
-  // 測試個人頻道:已建立
-  notifier.notifyCreated({
-    sprintName: '0608-0619',
-    startDate:  '2026/06/08',
-    endDate:    '2026/06/19',
-    folderUrl:  'https://drive.google.com/',
-    formUrl:    'https://docs.google.com/forms/',
-    slideUrl:   'https://docs.google.com/presentation/',
-  });
-
-  // 測試個人頻道:已發布
-  notifier.notifyPublished({
-    sprintName: '0608-0619',
-    previewUrl: 'https://docs.google.com/forms/d/e/FAKE/viewform',
-    editUrl:    'https://docs.google.com/forms/d/FAKE/edit',
-    reminderAt: '2026/06/18 10:00',
-  });
-
-  // 測試團隊頻道:提醒填寫
-  notifier.notifyReminder({
-    sprintName: '0608-0619',
-    formUrl:    'https://docs.google.com/forms/',
-  });
-}
+/*
+ * 原本這裡有個 testReminderNotifier(),名為測試但實際會發三張真的卡片
+ * (其中一張到團隊頻道),而且在 GAS 函式選單裡跟維運函式並列,手滑就中。
+ * 已移除 —— 要補發通知請用 手動操作.gs 裡的 notifyOwnerCreated() /
+ * notifyOwnerPublished() / notifyTeamReminder(),那些會用真實的 Sprint 資料。
+ */

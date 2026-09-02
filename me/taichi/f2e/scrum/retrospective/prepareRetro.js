@@ -1,19 +1,32 @@
 /**
  * ============================================================
- * prepareRetro.gs - Sprint 回顧準備:執行入口
+ * prepareRetro.gs - 建立下一個 Sprint 回顧(排程入口)
  * ============================================================
- * 唯一執行函式:prepareRetro(e)
+ * 📦 屬於 retrospective
  *
- * 📦 本專案依賴外部 Library:
- *   - InfraLib(識別碼:Infra)
- *   - NotifyLib(識別碼:Notify)
+ * RetroPreparer 是「編排」角色 —— 把各個單一職責的類別串起來,自己不含
+ * 業務邏輯:
+ *
+ *   SprintFinder         找到現有的 Sprint
+ *   SprintPlanner        算出下一個 Sprint 是什麼
+ *   SprintFolderBuilder  建資料夾 + 複製表單/投影片
+ *   ReminderNotifier     通知主管「已建立」
+ *   TriggerManager       排定發布排程
+ *
+ * 這裡同時是**組裝根**(composition root):所有具體依賴在這裡建立後注入,
+ * 底下的類別都只認介面、不自己去拿 Infra。
+ *
+ * 每個動作都能單獨呼叫 —— 見 手動操作.gs。
+ * 失敗時只發通知,不做自動修復:你收到通知後自己補呼叫缺的那一步。
+ *
+ * 📦 依賴外部 Library:InfraLib(Infra)、NotifyLib(Notify)
  *
  * 🔐 Script Properties:
- *   - RETRO_CHAT_WEBHOOK_URL  Google Chat Webhook URL
+ *   - RETRO_CHAT_WEBHOOK_URL  個人 Google Chat Webhook URL
+ *   - B_TEAM_RETRO_WEBHOOK    團隊 Google Chat Webhook URL
  *
- * 🔁 執行邏輯:
- *   - 排程觸發(有 e 參數):程式判斷今天該不該執行
- *   - 手動執行(無 e 參數):永遠執行,不走判斷
+ * ⚠️ prepareRetro() 給每週的固定排程呼叫。
+ *    手動想建立資料夾請用 手動操作.gs 的 createSprintFolder()。
  * ============================================================
  */
 
@@ -21,140 +34,146 @@
 /* ========== ⚙️ 設定區 ========== */
 
 const SPRINT_OPTIONS = {
-  templateFolderId:  '13KzUPSk_wBR73f2feBFbv3qwa2b4NWlP',  // scrum/template 資料夾
-  sprintRootFolderId: '16cZbBannmdoUifDlOU7T0VRTp6AH2H6t', // scrum 根資料夾
+  templateFolderId:   '13KzUPSk_wBR73f2feBFbv3qwa2b4NWlP',  // scrum/template 資料夾
+  sprintRootFolderId: '16cZbBannmdoUifDlOU7T0VRTp6AH2H6t',  // scrum 根資料夾
   sprintDays:         11,
 };
 
 
-/* ========== 🚀 主入口 ========== */
+class RetroPreparer {
 
-/**
- * 建立下一個 Sprint:資料夾 + 表單 + 投影片,並發送 Chat 通知
- * @param {Object} [e] - Apps Script 觸發器傳入的事件物件
- *                       有值=排程觸發,無值=手動執行
- * @returns {Object|null} 建立結果摘要,或 null(跳過)
- */
-function prepareRetro(e) {
-  try {
-    const isScheduled = !!(e && e.triggerUid);
-    let result = null;
+  /**
+   * @param {Object} options - SPRINT_OPTIONS
+   */
+  constructor(options) {
+    const drive = Infra.createDriveClient();
 
-    // 排程觸發 → 判斷該不該執行
-    if (isScheduled && !_shouldRunToday()) {
-      Logger.log('⏸️ 本週不執行(尚未到下一個 Sprint 預定開始日)');
+    this._options  = options;
+    this._finder   = new SprintFinder(drive, options.sprintRootFolderId);
+    this._planner  = new SprintPlanner(options.sprintDays);
+    this._builder  = new SprintFolderBuilder(
+      drive,
+      Infra.createFormClient(),
+      options.sprintRootFolderId,
+      options.templateFolderId
+    );
+    this._triggers = new TriggerManager();
+  }
+
+
+  /* ========== 🚀 公開方法 ========== */
+
+  /**
+   * 只在「今天已經到下一個 Sprint 的開始日」時才建立,否則跳過
+   *
+   * 排程觸發與手動執行走同一套日期判斷 —— 不再有「手動就強制執行」的特例,
+   * 那個特例是先前「重跑時建出錯誤 Sprint」的根源。
+   *
+   * @returns {Object|null} 建立結果,或 null(今天不該建立)
+   */
+  run() {
+    const latest = this._finder.findLatest();
+    let   result = null;
+
+    Logger.log(`📌 最新 Sprint:${latest.name}(結束於 ${DateFormat.formatDate(latest.endDate)})`);
+
+    if (this._planner.isTimeForNext(latest.endDate)) {
+      this._assertNoPendingSprint();
+      result = this._createNext();
     } else {
-      // 0. 確認上一個 Sprint 流程已走完(不允許兩個 Sprint 並存)
-      _assertNoPendingSprint();
-
-      // 1. 建立 Sprint
-      result = new RetroService(SPRINT_OPTIONS).create();
-      Logger.log('📦 RetroService 回傳:' + JSON.stringify(result));
-
-      if (!result || !result.sprintName) {
-        throw new Error('RetroService.create() 回傳結果不正確,請檢查 RetroService.gs');
-      }
-
-      // 2. 發送 Chat 通知「已建立」
-      new ReminderNotifier().notifyCreated(result);
-
-      // 3. 排定發布觸發器(時間細節由 TriggerManager 決定)
-      new TriggerManager().schedulePublish(result.endDate);
+      const expected = this._planner.nextStartDateAfter(latest.endDate);
+      Logger.log(`⏸️ 今天不建立 —— ${latest.name} 還沒到下一個開始日`);
+      Logger.log(`   預定開始日:${DateFormat.formatDate(expected)}`);
     }
 
     return result;
+  }
+
+
+  /* ========== 🔒 私有 ========== */
+
+  /**
+   * 串起「算 → 建 → 通知 → 排程」四個動作
+   * @private
+   */
+  _createNext() {
+    const plan = this._planner.planNext(this._finder.listRecent());
+
+    if (!plan) {
+      throw new Error(
+        '找不到可接續的 Sprint,無法推算下一個。\n' +
+        '若是第一次啟用,請執行 createSprintFolder()。'
+      );
+    }
+
+    Logger.log(`📆 下一個 Sprint:${plan.name}`);
+    Logger.log(`   起始日:${DateFormat.formatDate(plan.startDate)}(${DateFormat.formatWeekday(plan.startDate)})`);
+    Logger.log(`   結束日:${DateFormat.formatDate(plan.endDate)}(${DateFormat.formatWeekday(plan.endDate)})`);
+
+    const built = this._builder.build(plan.year, plan.name);
+
+    new ReminderNotifier().notifyCreated({
+      sprintName: plan.name,
+      startDate:  DateFormat.formatDate(plan.startDate),
+      endDate:    DateFormat.formatDate(plan.endDate),
+      folderUrl:  built.folderUrl,
+      formUrl:    built.formUrl,
+      slideUrl:   built.slideUrl,
+    });
+
+    this._triggers.schedulePublish(DateFormat.formatDate(plan.endDate));
+
+    Logger.log('🎉 prepareRetro 完成');
+    return built;
+  }
+
+  /**
+   * 確認沒有未完成的 Sprint 流程,有的話中止建立
+   *
+   * 一次性排程無法攜帶參數,PublishTask / ReminderTask 觸發時只能現場去 Drive
+   * 找「結束日最晚的 Sprint」。所以同時存在兩個進行中的 Sprint 時,它們會處理
+   * 到錯的那一個。實務上沒有同時跑兩個 Sprint 回顧的需求,直接擋掉最簡單。
+   *
+   * 走到這裡代表上一個 Sprint 已經結束(日期判斷通過),此時還有殘留排程就是
+   * 上一輪出錯沒收乾淨 —— 停下來報錯,不要繼續把狀況搞亂。
+   *
+   * @private
+   * @throws {Error} 還有待處理的動態排程時
+   */
+  _assertNoPendingSprint() {
+    const pending = this._triggers.listPending();
+
+    if (pending.length > 0) {
+      const names = pending.map((trigger) => trigger.getHandlerFunction()).join('、');
+      throw new Error(
+        `上一個 Sprint 的排程還沒收乾淨(待處理:${names})。\n` +
+        '這代表上一輪流程中途失敗,先確認狀況再繼續。\n' +
+        '處理方式:\n' +
+        '  1. 執行 showRetroStatus() 看目前狀態\n' +
+        '  2. 若上一個 Sprint 還有步驟沒跑完,到 手動操作.gs 補呼叫缺的那一步\n' +
+        '  3. 確認不需要了,執行 clearDynamicTriggers() 清除後再重試'
+      );
+    }
+  }
+}
+
+
+/* ========== 🎯 排程入口(全域函式,不可改名) ========== */
+
+/**
+ * 每週固定排程呼叫的入口
+ *
+ * GAS 的觸發器只能綁全域函式,所以這裡是一層薄包裝,邏輯都在 RetroPreparer。
+ *
+ * @param {Object} [e] - Apps Script 觸發器傳入的事件物件
+ * @returns {Object|null}
+ */
+function prepareRetro(e) {
+  try {
+    return new RetroPreparer(SPRINT_OPTIONS).run();
   } catch (error) {
-    Logger.log(`❌ 錯誤:${error.message}`);
+    Logger.log(`❌ prepareRetro 錯誤:${error.message}`);
     notifyFailure('prepareRetro', '建立下一個 Sprint 回顧', error);
     throw error;
   }
-}
-
-
-/* ========== 🔍 判斷邏輯 ========== */
-
-/**
- * 確認沒有未完成的 Sprint 流程,有的話中止建立
- *
- * 一個 Sprint 從建立到提醒發送完畢的期間,系統裡會有 publishTask 或
- * reminderTask 排程待處理。這段期間若再建立一個新的 Sprint,
- * PublishTask / ReminderTask 會因為是「重新推導最新 Sprint」
- * (一次性觸發器無法攜帶參數,只能現場去 Drive 找結束日最晚的那個)
- * 而處理到新建立的那一個,造成:
- *   - 舊 Sprint 的表單沒發布、團隊沒收到提醒
- *   - 新 Sprint 的表單提早兩週被發布
- *
- * 與其讓程式有能力處理這種混亂狀態,不如直接擋掉 —— 實務上不會有
- * 同時進行兩個 Sprint 回顧的需求。
- *
- * 排程觸發也一樣擋:正常情況下這時不該有待處理排程,若有代表上一輪
- * 出錯留下殘留,這時停下來報錯比繼續把狀況搞亂好。
- *
- * @private
- * @throws {Error} 還有待處理的動態排程時
- */
-function _assertNoPendingSprint() {
-  const pending = new TriggerManager().listPending();
-
-  if (pending.length > 0) {
-    const names = pending.map((t) => t.getHandlerFunction()).join('、');
-    throw new Error(
-      `上一個 Sprint 流程尚未完成(待處理排程:${names})。\n` +
-      '同時進行兩個 Sprint 會讓發布與提醒指向錯誤的 Sprint,因此中止。\n' +
-      '處理方式:\n' +
-      '  1. 若流程還在正常進行中,等它跑完即可(提醒發送後排程會自行清除)\n' +
-      '  2. 若上一輪失敗留下殘留,先修正失敗原因,再手動重跑 publishTask()\n' +
-      '     或 reminderTask() —— 手動執行會順便把殘留排程清乾淨\n' +
-      '  3. 要直接重來的話,執行 listAllTriggers() 查看現況,\n' +
-      '     再執行 clearDynamicTriggers() 清除'
-    );
-  }
-}
-
-/**
- * 判斷今天是否該執行(用於排程觸發時)
- * 規則:今天 >= 最新 Sprint 結束日 + 3 天(下週一)→ 該執行
- * @private
- * @returns {boolean}
- */
-function _shouldRunToday() {
-  const drive = Infra.createDriveClient();
-  const latest = findLatestSprintFolder(drive, SPRINT_OPTIONS.sprintRootFolderId);
-  const latestEndDate = latest.endDate;
-
-  const expectedStart = new Date(latestEndDate);
-  expectedStart.setDate(expectedStart.getDate() + 3);
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  expectedStart.setHours(0, 0, 0, 0);
-
-  Logger.log(`📌 最新 Sprint 結束日:${_formatDate(latestEndDate)}`);
-  Logger.log(`📆 預定開始日:${_formatDate(expectedStart)}`);
-  Logger.log(`📅 今天:${_formatDate(today)}`);
-
-  return today >= expectedStart;
-}
-
-
-/* ========== 🛠️ 工具 ========== */
-
-/** @private */
-function _formatDate(date) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}/${m}/${d}`;
-}
-
-
-/* ========== 🧪 測試函式 ========== */
-
-function testScheduledRun() {
-  prepareRetro({ triggerUid: 'test-trigger' });
-}
-
-
-function testValidate() {
-  new RetroService(SPRINT_OPTIONS).validate();
 }

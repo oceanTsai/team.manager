@@ -10,9 +10,9 @@
  *   取得)。本類別刻意不叫 MessageTemplate,避免與那個基底同名造成混淆。
  *
  * 提供三種訊息格式:
- *   - sprintCreated(result)   Sprint 已建立
- *   - formPublished(info)     表單已發布
- *   - surveyReminder(info)    請填寫問卷
+ *   - renderSprintCreated(result)   Sprint 已建立
+ *   - renderFormPublished(info)     表單已發布
+ *   - renderSurveyReminder(info)    請填寫問卷
  * ============================================================
  */
 
@@ -21,7 +21,7 @@ class RetroMessageTemplate extends Notify.getMessageTemplateClass() {
 
   /**
    * Sprint 已建立的通知訊息
-   * @param {Object} result - RetroService.create() 的回傳
+   * @param {Object} result - 建立結果(sprintName / startDate / endDate / folderUrl / formUrl / slideUrl)
    * @param {string} result.sprintName
    * @param {string} result.startDate
    * @param {string} result.endDate
@@ -30,7 +30,7 @@ class RetroMessageTemplate extends Notify.getMessageTemplateClass() {
    * @param {string} result.slideUrl
    * @returns {Object} Message 結構
    */
-  sprintCreated(result) {
+  renderSprintCreated(result) {
     return {
       title:    `✅ Sprint ${result.sprintName} 已建立`,
       subtitle: `${result.startDate} ~ ${result.endDate}`,
@@ -62,7 +62,7 @@ class RetroMessageTemplate extends Notify.getMessageTemplateClass() {
    * @param {string} info.reminderAt - 團隊收到提醒的時間,例如 '2026/06/18 10:00'
    * @returns {Object} Message 結構
    */
-  formPublished(info) {
+  renderFormPublished(info) {
     return {
       title:    `🎉 Sprint ${info.sprintName} 問卷已發布`,
       subtitle: `團隊將於 ${info.reminderAt} 收到填寫提醒`,
@@ -84,7 +84,7 @@ class RetroMessageTemplate extends Notify.getMessageTemplateClass() {
    * @param {string} info.formUrl
    * @returns {Object} Message 結構
    */
-  surveyReminder(info) {
+  renderSurveyReminder(info) {
     return {
       title:    `📋 Sprint ${info.sprintName} 回顧問卷填寫提醒`,
       subtitle: '請記得填寫回顧問卷',
@@ -105,9 +105,9 @@ class RetroMessageTemplate extends Notify.getMessageTemplateClass() {
    */
   render(payload) {
     switch (payload.type) {
-      case 'sprintCreated':   return this.sprintCreated(payload.data);
-      case 'formPublished':   return this.formPublished(payload.data);
-      case 'surveyReminder':  return this.surveyReminder(payload.data);
+      case 'sprintCreated':   return this.renderSprintCreated(payload.data);
+      case 'formPublished':   return this.renderFormPublished(payload.data);
+      case 'surveyReminder':  return this.renderSurveyReminder(payload.data);
       default: throw new Error(`未知的訊息類型:${payload.type}`);
     }
   }
