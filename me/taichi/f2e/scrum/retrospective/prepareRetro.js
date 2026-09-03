@@ -106,6 +106,16 @@ class RetroPreparer {
       );
     }
 
+    if (this._isPast(plan.endDate)) {
+      throw new Error(
+        `自動推算出的下一個 Sprint(${plan.name})起訖日已經是過去,` +
+        `結束於 ${DateFormat.formatDate(plan.endDate)}。\n` +
+        '這代表中間有 Sprint 沒被建立,現在已經接不上實際時間了。\n' +
+        '請執行 createSprintFolder(),並視需要在檔案最上方的 MANUAL_SPRINT ' +
+        '常數填入正確的年份/起訖日,手動建立目前實際對應的 Sprint。'
+      );
+    }
+
     Logger.log(`📆 下一個 Sprint:${plan.name}`);
     Logger.log(`   起始日:${DateFormat.formatDate(plan.startDate)}(${DateFormat.formatWeekday(plan.startDate)})`);
     Logger.log(`   結束日:${DateFormat.formatDate(plan.endDate)}(${DateFormat.formatWeekday(plan.endDate)})`);
@@ -125,6 +135,20 @@ class RetroPreparer {
 
     Logger.log('🎉 prepareRetro 完成');
     return built;
+  }
+
+  /**
+   * 判斷指定日期是否已經在今天之前(只比日期,不比時分秒)
+   * @private
+   */
+  _isPast(date) {
+    const today  = new Date();
+    const target = new Date(date);
+
+    today.setHours(0, 0, 0, 0);
+    target.setHours(0, 0, 0, 0);
+
+    return target < today;
   }
 
   /**
