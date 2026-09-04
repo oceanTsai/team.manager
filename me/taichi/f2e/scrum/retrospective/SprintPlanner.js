@@ -40,26 +40,25 @@ class SprintPlanner {
   /**
    * 接續現有的 Sprint,推算下一個
    *
-   * @param {Array<{name: string, endDate: Date}>} recentSprints
-   *        依結束日由新到舊排序的 Sprint 清單(SprintFinder.listRecent() 的回傳)
+   * @param {{name: string, endDate: Date}|null} latestSprint
+   *        目前最新的 Sprint(SprintFinder.findLatest() 的回傳),沒有就傳 null
    * @returns {{name: string, startDate: Date, endDate: Date, year: number,
    *            basedOn: Object}|null}
-   *          清單為空時回傳 null(不拋錯,由呼叫端決定怎麼處理)
+   *          latestSprint 為 null 時回傳 null(不拋錯,由呼叫端決定怎麼處理)
    */
-  planNext(recentSprints) {
+  planNext(latestSprint) {
     let plan = null;
 
-    if (recentSprints.length > 0) {
-      const latest = recentSprints[0];
-      const start  = SprintPlanner._nextMondayAfter(latest.endDate);
-      const end    = SprintPlanner._addDays(start, this._sprintDays);
+    if (latestSprint) {
+      const start = SprintPlanner._nextMondayAfter(latestSprint.endDate);
+      const end   = SprintPlanner._addDays(start, this._sprintDays);
 
       plan = {
         name:      `${DateFormat.formatMMDD(start)}-${DateFormat.formatMMDD(end)}`,
         startDate: start,
         endDate:   end,
         year:      start.getFullYear(),   // 依開始日歸檔,跨年 Sprint 才會放對年度資料夾
-        basedOn:   latest,
+        basedOn:   latestSprint,
       };
     }
 

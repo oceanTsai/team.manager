@@ -79,7 +79,7 @@ class RetroPreparer {
 
     if (this._planner.isTimeForNext(latest.endDate)) {
       this._assertNoPendingSprint();
-      result = this._createNext();
+      result = this._createNext(latest);
     } else {
       const expected = this._planner.nextStartDateAfter(latest.endDate);
       Logger.log(`⏸️ 今天不建立 —— ${latest.name} 還沒到下一個開始日`);
@@ -94,17 +94,12 @@ class RetroPreparer {
 
   /**
    * 串起「算 → 建 → 通知 → 排程」四個動作
+   *
    * @private
+   * @param {{name: string, endDate: Date}} latest - run() 已經查到的最新 Sprint
    */
-  _createNext() {
-    const plan = this._planner.planNext(this._finder.listRecent());
-
-    if (!plan) {
-      throw new Error(
-        '找不到可接續的 Sprint,無法推算下一個。\n' +
-        '若是第一次啟用,請執行 createSprintFolder()。'
-      );
-    }
+  _createNext(latest) {
+    const plan = this._planner.planNext(latest);
 
     if (this._isPast(plan.endDate)) {
       throw new Error(

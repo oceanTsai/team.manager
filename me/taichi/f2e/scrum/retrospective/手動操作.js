@@ -280,7 +280,8 @@ function showNextSprint() {
   const drive   = Infra.createDriveClient();
   const finder  = new SprintFinder(drive, SPRINT_OPTIONS.sprintRootFolderId);
   const planner = new SprintPlanner(SPRINT_OPTIONS.sprintDays);
-  const plan    = planner.planNext(finder.listRecent());
+  const recent  = finder.listRecent();
+  const plan    = planner.planNext(recent.length > 0 ? recent[0] : null);
 
   if (plan) {
     Logger.log(`📌 接續自:${plan.basedOn.name}(結束於 ${DateFormat.formatDate(plan.basedOn.endDate)})`);
@@ -396,7 +397,8 @@ function _resolveSprintSpec(finder, planner) {
     _assertValidSprintSpec(spec, MANUAL_SPRINT);
     Logger.log(`📌 使用 MANUAL_SPRINT 指定的 Sprint:${spec.name}`);
   } else {
-    const plan = planner.planNext(finder.listRecent());
+    const recent = finder.listRecent();
+    const plan   = planner.planNext(recent.length > 0 ? recent[0] : null);
 
     if (plan) {
       spec = { name: plan.name, year: plan.year };

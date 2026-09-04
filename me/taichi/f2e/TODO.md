@@ -1,33 +1,22 @@
 # 待處理清單
 
 > 這份文件是**自足的**——新開一個對話直接讀這裡就能接手，不需要先前的對話記錄。
-> 最後更新：2026-09-03
+> 最後更新：2026-09-04
+>
+> **範圍**：只列 `me/` 底下的任務。repo 根目錄的舊資料夾（`bugAssignment/`、`envLib/`、`infraLib/`、`jiraLogMigrate/`、`notifyLib/`、`report/`）屬於另一個 Google 空間、線上還在跑，不在這次重構範圍內，不列入。
+>
+> **測試**：正在改設計流程中，測試先不個別列項目——等重構完畢後測試會整個重做一次。
 
 ## 現況
 
-- B 項目已修好（`prepareRetro.js` 的 `RetroPreparer._createNext()` 加了過期檢查），**尚未 commit**
-- 其餘程式碼已提交並 push（最新 commit `d8b3927`）
+- B、A 項目已修好並已提交
 - `scrum/retrospective` 已完成重構：拆成單一職責的類別、依賴由建構子注入
-- 測試 88 個全過：`node me/taichi/f2e/test/run.js`
+- **`node me/taichi/f2e/test/run.js` 目前會卡死跑不完**——`test/retrospective/classes.test.js` 裡還有一行用舊介面呼叫 `planNext()`（傳陣列),A 項目改介面後這行會讓迴圈跑不出來。先不修（見上方「測試」範圍說明),等重構完畢後測試整個重做
 - **尚未部署**——`me/` 底下沒有任何 `.clasp.json`
 
 ---
 
 ## 一、`scrum/retrospective` 核心程式碼
-
-### A. `planNext()` 介面要求過多，導致重複抓 Drive 🟠
-
-**位置**：`SprintPlanner.js` 的 `planNext(recentSprints)`、`prepareRetro.js` 的 `RetroPreparer`
-
-`planNext()` 只用到 `recentSprints[0]`，卻要求呼叫端傳整個清單。於是 `RetroPreparer.run()` 呼叫 `findLatest()`（內部含 `listRecent()`），`_createNext()` 又呼叫一次 `listRecent()`。
-
-實測一次 `prepareRetro` 打 **8 次** Drive 呼叫，實際只需 4 次。
-
-**修法**：把參數改成 `planNext(latestSprint)`（可為 null）。呼叫端就不用多抓一次。同時解掉介面隔離的問題。
-
-呼叫點：`prepareRetro.js` 的 `_createNext()`、`手動操作.js` 的 `showNextSprint()` 與 `_resolveSprintSpec()`。
-
----
 
 ### C. `ReminderNotifier` 要求兩個 webhook 都設定 🟡
 
@@ -50,37 +39,9 @@ if (!teamUrl) throw ...     // 建構子就擋，即使這次只發個人頻道
 
 兩者仍直接引用全域 `Infra.DriveMime`。不過這是**常數**不是服務，可以主張是可接受的例外——優先度最低。
 
-若決定不改，應該把 `test/retrospective/conventions.test.js` 的斷言訊息改成誠實反映例外（見 F）。
-
 ---
 
-## 二、`scrum/retrospective` 測試
-
-### E. 編排層零測試覆蓋 🔴
-
-`RetroPreparer`、`FormPublishTask`、`TeamReminderTask` 在測試裡出現 **0 次**。88 個測試全在測底層類別。
-
-三條流程手動探測過都能正常跑（建立 → 發布 → 提醒，卡片發到正確頻道），但沒有自動化測試守著。
-
-**難點**：這三個類別是組裝根，自己呼叫 `Infra.createDriveClient()`，測試需要 stub 全域 `Infra`。可參考先前的探測腳本做法。
-
----
-
-### F. 規範測試的斷言比它宣稱的弱 🟠
-
-**位置**：`test/retrospective/conventions.test.js` 第 27–36 行
-
-訊息寫「類別不自己去拿 Infra」，但實際只檢查 `Infra.create*`：
-
-```js
-check(`${f} 不呼叫 Infra.create*`, /Infra\.create/.test(...), false);
-```
-
-所以 D 提到的 `Infra.DriveMime` 溜過去了。**這比程式碼本身的問題更值得修——它會給人錯誤的安全感。**
-
----
-
-## 三、`library`（跨專案）
+## 二、`library`（跨專案）
 
 ### G. 通知發送失敗被吞掉 🔴
 
@@ -115,7 +76,7 @@ webhook 失效時流程照常走完，但**沒有人收到通知，也不會有�
 
 ---
 
-## 四、部署設定
+## 三、部署設定
 
 ### J. `me/` 底下沒有任何 `.clasp.json` 🔴
 
@@ -150,17 +111,7 @@ webhook 失效時流程照常走完，但**沒有人收到通知，也不會有�
 
 ---
 
-### L. 封存的 `report/` 仍綁著線上 scriptId 🟠
-
-`report/.clasp.json` 指向 `1mc9eivKYBtllCbZi4sHuJuVKoZVszpvfxt9H-3lXxqQflr4uLn7o_gCm`，而 `report/` 裡是**舊的壞版本**（`tm.cancel()` 無差別刪排程、引用不存在的 `SPRINT_OPTIONS.parentFolderId`、只搜尋當年度資料夾）。
-
-**風險**：有人誤從 `report/` 執行 `clasp push`，會把線上專案覆蓋回壞的版本。
-
-考慮的處理方式：把封存資料夾的 `.clasp.json` 移除或改名，讓它們無法被 push。
-
----
-
-## 五、從未審查過的專案（約 3700 行）
+## 四、從未審查過的專案（約 3700 行）
 
 | 專案 | 行數 |
 |---|---|
@@ -174,7 +125,7 @@ webhook 失效時流程照常走完，但**沒有人收到通知，也不會有�
 
 ---
 
-## 六、懸而未決的討論
+## 五、懸而未決的討論
 
 ### M. 建構子要不要改用 `this.options`
 
@@ -214,14 +165,14 @@ webhook 失效時流程照常走完，但**沒有人收到通知，也不會有�
 
 ## 建議的處理順序
 
-1. **A**（同一個檔案，順手做掉）
-2. **G**（影響最廣，通知靜默失敗）
-3. **J → K → L**（部署設定，做完才能真的上線）
-4. **E / F**（測試缺口）
-5. **C / D / H / I / M**（優先度較低）
-6. **五**（未審查的專案，建議一個一個過）
+1. **G**（影響最廣，通知靜默失敗）
+2. **J → K**（部署設定，做完才能真的上線）
+3. **C / D / H / I / M**（優先度較低）
+4. **四**（未審查的專案，建議一個一個過）
 
 ## 怎麼跑測試
+
+> ⚠️ 目前執行下面指令會卡死跑不完，見上方「現況」說明。
 
 ```bash
 node me/taichi/f2e/test/run.js          # 全部
