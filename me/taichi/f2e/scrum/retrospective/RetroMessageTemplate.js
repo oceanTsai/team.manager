@@ -6,8 +6,10 @@
  *
  * 職責:
  *   定義 Sprint 回顧相關的通知訊息格式。
- *   繼承 NotifyLib 的 MessageTemplate 抽象基底(透過 Notify.getMessageTemplateClass()
- *   取得)。本類別刻意不叫 MessageTemplate,避免與那個基底同名造成混淆。
+ *   不繼承 NotifyLib 的 MessageTemplate 抽象基底——三個具名方法各自組出
+ *   Notifier.sendCard() 認得的通用 Message 結構(title/subtitle/fields/actions),
+ *   直接被 ReminderNotifier 呼叫,不透過基底要求的 render() 入口,繼承在這裡
+ *   沒有實際作用。
  *
  * 提供三種訊息格式:
  *   - renderSprintCreated(result)   Sprint 已建立
@@ -17,7 +19,7 @@
  */
 
 
-class RetroMessageTemplate extends Notify.getMessageTemplateClass() {
+class RetroMessageTemplate {
 
   /**
    * Sprint 已建立的通知訊息
@@ -95,20 +97,5 @@ class RetroMessageTemplate extends Notify.getMessageTemplateClass() {
         { text: '前往填寫', url: info.formUrl },
       ],
     };
-  }
-
-  /**
-   * render() 實作(MessageTemplate 抽象要求)
-   * 透過 type 決定要 render 哪種訊息
-   * @param {{ type: string, data: Object }} payload
-   * @returns {Object} Message 結構
-   */
-  render(payload) {
-    switch (payload.type) {
-      case 'sprintCreated':   return this.renderSprintCreated(payload.data);
-      case 'formPublished':   return this.renderFormPublished(payload.data);
-      case 'surveyReminder':  return this.renderSurveyReminder(payload.data);
-      default: throw new Error(`未知的訊息類型:${payload.type}`);
-    }
   }
 }
