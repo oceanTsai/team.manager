@@ -93,21 +93,6 @@ class NotifyEnvLib {
   // ------------------------------------------------------------------------
 
   /**
-   * 取得必填環境變數,沒設就拋錯
-   * @private
-   */
-  _getRequired(key) {
-    const value = PropertiesService.getScriptProperties().getProperty(key);
-    if (!value) {
-      throw new Error(
-        `必要的指令碼屬性「${key}」尚未設定。\n` +
-        `請到「專案設定 → 指令碼屬性」新增 ${key}`
-      );
-    }
-    return value;
-  }
-
-  /**
    * 取得選填環境變數,沒設回傳 null
    * @private
    */
