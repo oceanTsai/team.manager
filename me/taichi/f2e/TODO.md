@@ -9,7 +9,7 @@
 
 ## 現況
 
-- B、A 項目已修好並已提交
+- B、A、C 項目已修好並已提交
 - `scrum/retrospective` 已完成重構：拆成單一職責的類別、依賴由建構子注入
 - **`node me/taichi/f2e/test/run.js` 目前會卡死跑不完**——`test/retrospective/classes.test.js` 裡還有一行用舊介面呼叫 `planNext()`（傳陣列),A 項目改介面後這行會讓迴圈跑不出來。先不修（見上方「測試」範圍說明),等重構完畢後測試整個重做
 - **尚未部署**——`me/` 底下沒有任何 `.clasp.json`
@@ -18,26 +18,21 @@
 
 ## 一、`scrum/retrospective` 核心程式碼
 
-### C. `ReminderNotifier` 要求兩個 webhook 都設定 🟡
-
-**位置**：`ReminderNotifier.js` 建構子
-
-```js
-if (!personalUrl) throw ...
-if (!teamUrl) throw ...     // 建構子就擋，即使這次只發個人頻道
-```
-
-只設定個人頻道（`RETRO_CHAT_WEBHOOK_URL`）就完全不能發任何通知，連 `notifyCreated()` 這種只用個人頻道的也被擋。
-
-**修法**：把檢查從建構子移到各個 `notifyXXX()` 方法——用到哪個才檢查哪個。
-
----
-
 ### D. 依賴注入只做了一半 🟡
 
 **位置**：`SprintFinder.js`、`SprintFolderBuilder.js`
 
 兩者仍直接引用全域 `Infra.DriveMime`。不過這是**常數**不是服務，可以主張是可接受的例外——優先度最低。
+
+---
+
+### N. `RetroMessageTemplate.render()` 是死碼 🟡
+
+**位置**：`RetroMessageTemplate.js` 的 `render(payload)`
+
+這個方法是為了滿足 `MessageTemplate`（NotifyLib 的抽象基底）要求子類必須實作 `render()` 才寫的，內部用 `payload.type` 分派到 `renderSprintCreated`/`renderFormPublished`/`renderSurveyReminder`。查過整個 `scrum/retrospective` 與 `test/`，**從來沒有被呼叫過**——`ReminderNotifier` 都是直接呼叫具名方法，不透過 `render()`。
+
+**牽動的問題**：拿掉這個方法後，`RetroMessageTemplate` 還要不要 `extends Notify.getMessageTemplateClass()` 也要一併重新考慮——目前這個繼承唯一履行的抽象方法就是它。討論時建議把「要不要拿掉 render()」跟「要不要拿掉 extends」放在一起決定，不要只砍一半。
 
 ---
 
@@ -167,7 +162,7 @@ webhook 失效時流程照常走完，但**沒有人收到通知，也不會有�
 
 1. **G**（影響最廣，通知靜默失敗）
 2. **J → K**（部署設定，做完才能真的上線）
-3. **C / D / H / I / M**（優先度較低）
+3. **D / H / I / M / N**（優先度較低）
 4. **四**（未審查的專案，建議一個一個過）
 
 ## 怎麼跑測試

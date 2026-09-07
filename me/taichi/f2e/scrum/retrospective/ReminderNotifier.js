@@ -26,19 +26,9 @@ class ReminderNotifier {
   constructor() {
     const props = PropertiesService.getScriptProperties();
 
-    const personalUrl = props.getProperty('RETRO_CHAT_WEBHOOK_URL');
-    const teamUrl     = props.getProperty('B_TEAM_RETRO_WEBHOOK');
-
-    if (!personalUrl) {
-      throw new Error('未設定 RETRO_CHAT_WEBHOOK_URL，請到「專案設定 → 指令碼屬性」新增');
-    }
-    if (!teamUrl) {
-      throw new Error('未設定 B_TEAM_RETRO_WEBHOOK，請到「專案設定 → 指令碼屬性」新增');
-    }
-
-    this._personalNotifier = Notify.createChatNotifier(personalUrl);
-    this._teamNotifier     = Notify.createChatNotifier(teamUrl);
-    this._template         = new RetroMessageTemplate();
+    this._personalUrl = props.getProperty('RETRO_CHAT_WEBHOOK_URL');
+    this._teamUrl      = props.getProperty('B_TEAM_RETRO_WEBHOOK');
+    this._template     = new RetroMessageTemplate();
   }
 
 
@@ -50,7 +40,7 @@ class ReminderNotifier {
    */
   notifyCreated(result) {
     const message = this._template.renderSprintCreated(result);
-    const ok = this._personalNotifier.sendCard(message);
+    const ok = this._personalNotifier().sendCard(message);
     this._log('notifyCreated', result.sprintName, ok);
   }
 
@@ -60,7 +50,7 @@ class ReminderNotifier {
    */
   notifyPublished(info) {
     const message = this._template.renderFormPublished(info);
-    const ok = this._personalNotifier.sendCard(message);
+    const ok = this._personalNotifier().sendCard(message);
     this._log('notifyPublished', info.sprintName, ok);
   }
 
@@ -70,12 +60,34 @@ class ReminderNotifier {
    */
   notifyReminder(info) {
     const message = this._template.renderSurveyReminder(info);
-    const ok = this._teamNotifier.sendCard(message);
+    const ok = this._teamNotifier().sendCard(message);
     this._log('notifyReminder', info.sprintName, ok);
   }
 
 
   /* ========== 🔒 私有方法 ========== */
+
+  /**
+   * 用到個人頻道才檢查、才建立 —— 沒設定就在這裡拋錯
+   * @private
+   */
+  _personalNotifier() {
+    if (!this._personalUrl) {
+      throw new Error('未設定 RETRO_CHAT_WEBHOOK_URL，請到「專案設定 → 指令碼屬性」新增');
+    }
+    return Notify.createChatNotifier(this._personalUrl);
+  }
+
+  /**
+   * 用到團隊頻道才檢查、才建立 —— 沒設定就在這裡拋錯
+   * @private
+   */
+  _teamNotifier() {
+    if (!this._teamUrl) {
+      throw new Error('未設定 B_TEAM_RETRO_WEBHOOK，請到「專案設定 → 指令碼屬性」新增');
+    }
+    return Notify.createChatNotifier(this._teamUrl);
+  }
 
   /** @private */
   _log(method, sprintName, ok) {
