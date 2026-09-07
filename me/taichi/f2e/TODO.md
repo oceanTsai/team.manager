@@ -7,7 +7,8 @@
 
 ## 現況
 
-- B、A、C、N 項目已修好並已提交，`scrum/retrospective` 的測試也已補齊並跟上新介面
+- B、A、C、N、H 項目已修好並已提交，`scrum/retrospective` 的測試也已補齊並跟上新介面
+- `library/notify-env-lib`：命名問題（`testNotifyEnvLib()`、`envKeys` 缺 `_`）已修好；`_getRequired()` 死碼已刪除，I（跟 jira-identity-lib 重複實作）因此一併解決
 - `scrum/retrospective` 已完成重構：拆成單一職責的類別、依賴由建構子注入
 - `node me/taichi/f2e/test/run.js` 全部通過，共 99 個檢查（4 組，含新加的 `test/retrospective/prepareRetro.test.js`，覆蓋 B 的過期檢查與 A 的查詢次數）
 - **尚未部署**——`me/` 底下沒有任何 `.clasp.json`
@@ -40,22 +41,6 @@
 webhook 失效時流程照常走完，但**沒有人收到通知，也不會有錯誤**。
 
 **影響範圍**：`notify-lib` 是共用 library，牽動 `scrum/retrospective` 與 `jira/quarterly-tickets`。要改就是跨專案改動。
-
----
-
-### H. `notify-env-lib._getRequired()` 是死碼 🟡
-
-**位置**：`library/notify-env-lib/NotifyEnvLib.js`
-
-零呼叫者。唯一註冊的 key（`JIRA_MESSAGE_WEBHOOK_URL`）是 `required: false`，所有路徑都走 `_getOptional()`。
-
----
-
-### I. `_getRequired()` 在兩個 library 各有一份 🟡
-
-`library/jira-identity-lib/` 與 `library/notify-env-lib/` 各有一份幾乎相同的實作。
-
-**注意**：兩者是**獨立的 GAS 專案**，要共用得讓其中一個依賴另一個——不是單純抽函式就能解決。修不修要權衡。
 
 ---
 
@@ -150,12 +135,10 @@ webhook 失效時流程照常走完，但**沒有人收到通知，也不會有�
 
 1. **G**（影響最廣，通知靜默失敗）
 2. **J → K**（部署設定，做完才能真的上線）
-3. **D / H / I / M**（優先度較低）
+3. **D / M**（優先度較低）
 4. **四**（未審查的專案，建議一個一個過）
 
 ## 怎麼跑測試
-
-> ⚠️ 目前執行下面指令會卡死跑不完，見上方「現況」說明。
 
 ```bash
 node me/taichi/f2e/test/run.js          # 全部
