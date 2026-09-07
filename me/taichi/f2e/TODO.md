@@ -1,17 +1,15 @@
 # 待處理清單
 
 > 這份文件是**自足的**——新開一個對話直接讀這裡就能接手，不需要先前的對話記錄。
-> 最後更新：2026-09-04
+> 最後更新：2026-09-07
 >
 > **範圍**：只列 `me/` 底下的任務。repo 根目錄的舊資料夾（`bugAssignment/`、`envLib/`、`infraLib/`、`jiraLogMigrate/`、`notifyLib/`、`report/`）屬於另一個 Google 空間、線上還在跑，不在這次重構範圍內，不列入。
->
-> **測試**：正在改設計流程中，測試先不個別列項目——等重構完畢後測試會整個重做一次。
 
 ## 現況
 
-- B、A、C、N 項目已修好並已提交
+- B、A、C、N 項目已修好並已提交，`scrum/retrospective` 的測試也已補齊並跟上新介面
 - `scrum/retrospective` 已完成重構：拆成單一職責的類別、依賴由建構子注入
-- **`node me/taichi/f2e/test/run.js` 目前會卡死跑不完**——`test/retrospective/classes.test.js` 裡還有一行用舊介面呼叫 `planNext()`（傳陣列),A 項目改介面後這行會讓迴圈跑不出來。先不修（見上方「測試」範圍說明),等重構完畢後測試整個重做
+- `node me/taichi/f2e/test/run.js` 全部通過，共 99 個檢查（4 組，含新加的 `test/retrospective/prepareRetro.test.js`，覆蓋 B 的過期檢查與 A 的查詢次數）
 - **尚未部署**——`me/` 底下沒有任何 `.clasp.json`
 
 ---

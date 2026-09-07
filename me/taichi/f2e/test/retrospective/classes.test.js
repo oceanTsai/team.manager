@@ -40,16 +40,17 @@ check('拋錯', (()=>{try{finder.findLatest();return false}catch(e){return e.mes
 
 console.log('\n【SprintPlanner】純計算，完全不碰 Drive');
 const planner = new SprintPlanner(11);
-let plan = planner.planNext([{ name:'0608-0619', endDate:new Date(2026,5,19) }]);
+let plan = planner.planNext({ name:'0608-0619', endDate:new Date(2026,5,19) });
 check('接續算出 0622-0703', plan.name, '0622-0703');
 check('起始日是週一', DateFormat.formatWeekday(plan.startDate), '週一');
 check('結束日是週五', DateFormat.formatWeekday(plan.endDate), '週五');
 check('歸檔年份取開始日那年', plan.year, 2026);
-plan = planner.planNext([{ name:'1214-1225', endDate:new Date(2026,11,25) }]);
+check('basedOn 是傳進去的那筆', plan.basedOn.name, '0608-0619');
+plan = planner.planNext({ name:'1214-1225', endDate:new Date(2026,11,25) });
 check('跨年:算出 1228-0108', plan.name, '1228-0108');
 check('跨年:結束日 2027', DateFormat.formatDate(plan.endDate), '2027/01/08');
 check('跨年:仍歸檔 2026', plan.year, 2026);
-check('沒有可接續的回傳 null', planner.planNext([]), 'null');
+check('沒有可接續的回傳 null', planner.planNext(null), 'null');
 const first = planner.planFirst();
 check('第一個 Sprint 起於週一', DateFormat.formatWeekday(first.startDate), '週一');
 check('第一個 Sprint 不晚於今天', first.startDate <= new Date(), true);

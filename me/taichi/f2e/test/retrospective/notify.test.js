@@ -57,6 +57,21 @@ check('已建立 → 個人頻道', SENT[0].url, 'chat://personal');
 check('已發布 → 個人頻道', SENT[1].url, 'chat://personal');
 check('提醒填寫 → 團隊頻道', SENT[2].url, 'chat://team');
 
+console.log('\n【ReminderNotifier】只設定個人頻道:個人通知能發,團隊通知才報錯');
+PROPS = { RETRO_CHAT_WEBHOOK_URL: 'chat://personal' };
+SENT = []; const n2 = new ReminderNotifier();
+let createdThrew = false;
+try { n2.notifyCreated({sprintName:'S',startDate:'a',endDate:'b',folderUrl:'f',formUrl:'m',slideUrl:'s'}); }
+catch (e) { createdThrew = true; }
+check('個人頻道有設定:notifyCreated 不拋錯', createdThrew, false);
+check('個人頻道有設定:notifyCreated 有發送', SENT.length, 1);
+
+let reminderThrew = false, reminderMsg = '';
+try { n2.notifyReminder({sprintName:'S',formUrl:VIEW}); }
+catch (e) { reminderThrew = true; reminderMsg = e.message; }
+check('團隊頻道沒設定:notifyReminder 拋錯', reminderThrew, true);
+check('拋錯訊息點名 B_TEAM_RETRO_WEBHOOK', reminderMsg.includes('B_TEAM_RETRO_WEBHOOK'), true);
+
 console.log('\n【FailureNotifier】卡片要能告訴人去哪裡做什麼');
 SENT=[]; H.resetLog(); chatThrows=false;
 PROPS={RETRO_CHAT_WEBHOOK_URL:'chat://personal'};
