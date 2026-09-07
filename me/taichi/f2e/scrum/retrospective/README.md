@@ -79,7 +79,7 @@ Sprint 回顧自動化：建立 Sprint 資料夾/表單/投影片、定時發布
 - 逐步的處理指引（含「修好後要重跑哪一個函式」）
 - 兩顆按鈕：**開啟 Apps Script 專案**、**開啟 scrum 資料夾**，不用自己找連結
 
-`FailureNotifier` 刻意**不透過 `ReminderNotifier`**——後者的建構子要求兩個 webhook 都設定，萬一失敗原因正好是「webhook 沒設定」，拿它回報會再爆一次。它也全程包 try/catch，**自己絕不拋錯**，以免蓋掉原本要回報的錯誤。
+`FailureNotifier` 刻意**不透過 `ReminderNotifier`**——後者是用到哪個頻道才檢查那個 webhook 有沒有設定，萬一 `FailureNotifier` 要回報的失敗原因正好是「個人頻道 webhook 沒設定」，透過 `ReminderNotifier` 一樣會在檢查那一步再拋一次。`FailureNotifier` 只依賴 `RETRO_CHAT_WEBHOOK_URL` 這一個屬性，依賴最少。它也全程包 try/catch，**自己絕不拋錯**，以免蓋掉原本要回報的錯誤。
 
 ### 失敗後怎麼恢復：不做自動修復，你自己補呼叫
 
@@ -164,25 +164,28 @@ sequenceDiagram
 
     Trigger->>RP: prepareRetro(e)
     RP->>SF: findLatest()
-    SF-->>RP: 最新 Sprint
-    RP->>SP: isTimeForNext(endDate)
+    SF-->>RP: 最新 Sprint(latest)
+    RP->>SP: isTimeForNext(latest.endDate)
     alt 還沒到下一個開始日
         SP-->>RP: false → 跳過,不建立
     else 該建下一個了
         RP->>RP: _assertNoPendingSprint() 確認排程收乾淨了
-        RP->>SF: listRecent()
-        RP->>SP: planNext(recentSprints)
+        RP->>SP: planNext(latest)
         SP-->>RP: plan(名稱/起訖日/年度)
-        RP->>SB: build(plan.year, plan.name)
-        SB-->>RP: 資料夾 / 表單 / 投影片(已存在就沿用)
-        RP->>RN: notifyCreated(...)
-        RN->>RN: sendCard(「已建立」→ 個人頻道)
-        RP->>TM: schedulePublish(結束日)
-        TM->>TM: newTrigger('publishTask').at(發布時間)
+        alt plan 的結束日已經過去
+            RP->>RP: 拋錯,中止 —— 引導改用 createSprintFolder() + MANUAL_SPRINT
+        else 結束日在未來
+            RP->>SB: build(plan.year, plan.name)
+            SB-->>RP: 資料夾 / 表單 / 投影片(已存在就沿用)
+            RP->>RN: notifyCreated(...)
+            RN->>RN: sendCard(「已建立」→ 個人頻道)
+            RP->>TM: schedulePublish(結束日)
+            TM->>TM: newTrigger('publishTask').at(發布時間)
+        end
     end
 ```
 
-`SprintPlanner` 拿到的是 `SprintFinder` 撈好的清單，它自己完全不碰 Drive——所以日期推算的邏輯可以完整單元測試。
+`SprintPlanner` 拿到的是 `RetroPreparer` 用 `findLatest()` 查到的單一最新 Sprint(不是整份清單),它自己完全不碰 Drive——所以日期推算的邏輯可以完整單元測試。「算出的結果是否已經過去」這個檢查放在 `RetroPreparer` 這一層，不放進 `SprintPlanner`，這樣 `showNextSprint()` 這種純預覽用途才不會被連帶擋下來。
 
 ### 階段二：發布表單（`publishTask`，由階段一排定的觸發器自動呼叫）
 
@@ -256,6 +259,4 @@ GAS 的一次性觸發器**無法夾帶參數**（不能寫成 `.at(date).withAr
 
 ## 已知限制（尚未修正）
 
-- **`SprintPlanner.planNext()` 沒檢查算出的日期是否在未來**。若 `prepareRetro` 停擺數週後才恢復，會建立一個起訖日都在過去的 Sprint，`schedulePublish()` 也會拿過去的時間去排排程。（Apps Script 對過去時間的 `.at()` 是接受並儘快執行而非拒絕——此為文件推論，未實測。）手動操作的 `schedulePublishTask()` / `scheduleReminderTask()` 已經會在這種情況警示，但自動流程還沒防。
-- **`ReminderNotifier` 建構子要求兩個 webhook 都設定**（`RETRO_CHAT_WEBHOOK_URL` 和 `B_TEAM_RETRO_WEBHOOK`），即使某些通知方法只會用到其中一個。只設定個人頻道就完全不能發任何通知。
-- **通知發送失敗會被吞掉**：`Notifier._post()` 內部 catch 住 HTTP 錯誤並回傳 `false`，只寫 log 不拋錯。所以 webhook 失效時流程照常走完，但沒有人收到任何通知，也不會有錯誤。
+- **通知發送失敗會被吞掉**：`Notifier._post()` 內部 catch 住 HTTP 錯誤並回傳 `false`，只寫 log 不拋錯。所以 webhook 失效時流程照常走完，但沒有人收到任何通知，也不會有錯誤。這是共用的 `notify-lib` 裡的問題，牽動 `scrum/retrospective` 之外的其他專案，要改是跨專案改動。
