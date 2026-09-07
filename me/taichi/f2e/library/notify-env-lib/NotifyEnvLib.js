@@ -138,6 +138,6 @@ function notifyEnvLib() {
   return _notifyEnvLibInstance;
 }
 
-function testNotifyEnvLib(){
+function printWebhookStatus(){
   notifyEnvLib().printStatus()
 }
