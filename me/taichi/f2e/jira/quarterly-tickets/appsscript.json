@@ -10,8 +10,8 @@
         "version": "1"
       },
       {
-        "userSymbol": "NotifyEnvLib",
-        "libraryId": "TODO_填入建立notify-env-lib後的scriptId",
+        "userSymbol": "NotifyWebhookLib",
+        "libraryId": "TODO_填入建立notify-webhook-lib後的scriptId",
         "version": "1"
       },
       {

@@ -12,7 +12,7 @@
 //
 // ⚠️ 需要掛載 Library:
 //   - JiraIdentityLib (識別碼設為 JiraIdentityLib)  ← Jira 身份/認證
-//   - NotifyEnvLib    (識別碼設為 NotifyEnvLib)     ← 通知管道設定(webhook URL)
+//   - NotifyWebhookLib (識別碼設為 NotifyWebhookLib) ← 通知管道設定(webhook URL)
 //   - Notify          (識別碼設為 Notify)           ← 通知器
 // ==========================================================================
 
@@ -114,7 +114,7 @@ function manualCreateSpecificQuarter() {
 function _createInstance() {
   const jiraEnv = JiraIdentityLib.jiraIdentityLib();
 
-  const webhookUrl = NotifyEnvLib.notifyEnvLib().getJiraMessageWebhookUrl();
+  const webhookUrl = NotifyWebhookLib.notifyWebhookLib().getJiraMessageWebhookUrl();
   const notifier = webhookUrl ? Notify.createChatNotifier(webhookUrl) : null;
   const template = webhookUrl ? new TicketCreationTemplate() : null;
 

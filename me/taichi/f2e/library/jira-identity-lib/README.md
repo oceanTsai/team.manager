@@ -4,7 +4,7 @@
 
 集中管理 Jira 相關的環境變數（URL、admin 認證、各成員 email/token），讓呼叫端能選一個具名使用者的身份去操作 Jira（`getOcean()`/`getBrian()`/`getUser(userKey)`）。`jira/worklog-migrate` 用它保留 worklog 原作者身份。
 
-通知管道相關的設定另外在 [[notify-env-lib]]。
+通知管道相關的設定另外在 [[notify-webhook-lib]]。
 
 ## 環境變數命名規則
 

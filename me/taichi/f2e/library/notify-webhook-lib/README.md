@@ -1,6 +1,6 @@
-# NotifyEnvLib
+# NotifyWebhookLib
 
-> 掛載識別碼：**`NotifyEnvLib`**
+> 掛載識別碼：**`NotifyWebhookLib`**
 
 集中管理「通知管道」相關的機密設定（目前只有 Google Chat webhook URL）。
 
@@ -17,7 +17,7 @@ Jira 身份認證相關的設定另外在 [[jira-identity-lib]]。
 ## 使用範例
 
 ```js
-const notify = NotifyEnvLib.notifyEnvLib();
+const notify = NotifyWebhookLib.notifyWebhookLib();
 const url = notify.getJiraMessageWebhookUrl();
 notify.printStatus();
 ```

@@ -8,7 +8,7 @@
 ## 現況
 
 - B、A、C、N、H 項目已修好並已提交，`scrum/retrospective` 的測試也已補齊並跟上新介面
-- `library/notify-env-lib`：命名問題（`testNotifyEnvLib()`、`envKeys` 缺 `_`）已修好；`_getRequired()` 死碼已刪除，I（跟 jira-identity-lib 重複實作）因此一併解決；沒有實際效益的單例快取也已拿掉（class 封裝本身保留，只拿掉快取邏輯）。這個資料夾這輪全部處理完
+- `library/notify-webhook-lib`（原 `notify-env-lib`，已改名避免跟 `notify-lib` 搞混）：命名問題（`testNotifyEnvLib()`、`envKeys` 缺 `_`）已修好；`_getRequired()` 死碼已刪除，I（跟 jira-identity-lib 重複實作）因此一併解決；沒有實際效益的單例快取也已拿掉（class 封裝本身保留，只拿掉快取邏輯）。這個資料夾這輪全部處理完
 - `scrum/retrospective` 已完成重構：拆成單一職責的類別、依賴由建構子注入
 - `node me/taichi/f2e/test/run.js` 全部通過，共 99 個檢查（4 組，含新加的 `test/retrospective/prepareRetro.test.js`，覆蓋 B 的過期檢查與 A 的查詢次數）
 - **尚未部署**——`me/` 底下沒有任何 `.clasp.json`
@@ -57,7 +57,7 @@ webhook 失效時流程照常走完，但**沒有人收到通知，也不會有�
 | `library/infra-lib` | 可沿用原 scriptId `17AFWXtq5xxqn8SDmL4ovnaGXCBvpInEPDzIf8Te_gFXik0qKOViI13Oi`（內容沒改名） |
 | `library/notify-lib` | 可沿用原 scriptId `1P0w2KWO77JiugnqrcjyRJn6wxDSWmHuazzFUL2446vb2VISYWrluYpib` |
 | `library/jira-identity-lib` | **需要新的**（從 envLib 拆出來的） |
-| `library/notify-env-lib` | **需要新的**（從 envLib 拆出來的） |
+| `library/notify-webhook-lib` | **需要新的**（從 envLib 拆出來的） |
 | `scrum/retrospective` | **需要新的**（原 report 拆成兩個） |
 | `jira/quarterly-tickets` | **需要新的**（原 report 拆成兩個） |
 | `jira/worklog-migrate` | 可沿用原 scriptId `1ZhNq7TIwB-s2h7rpP_q9hl5v0BvGRDTtNw2N--2k0oFU34CZ-cAppgPF` |
@@ -75,7 +75,7 @@ webhook 失效時流程照常走完，但**沒有人收到通知，也不會有�
 |---|---|---|
 | `jira/worklog-migrate/appsscript.json` | 8 | `jira-identity-lib` 的 scriptId |
 | `jira/quarterly-tickets/appsscript.json` | 9 | `jira-identity-lib` 的 scriptId |
-| `jira/quarterly-tickets/appsscript.json` | 14 | `notify-env-lib` 的 scriptId |
+| `jira/quarterly-tickets/appsscript.json` | 14 | `notify-webhook-lib` 的 scriptId |
 
 ---
 

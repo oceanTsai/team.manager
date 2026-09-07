@@ -1,29 +1,29 @@
 // ==========================================================================
-// NotifyEnvLib.gs - 通知相關環境變數 Library
+// NotifyWebhookLib.gs - 通知管道 webhook 設定 Library
 // --------------------------------------------------------------------------
 // 集中管理所有「通知管道」相關的環境變數。
 // 目前包含 Google Chat 的 Webhook URL,未來可擴充其他管道
 // (Slack、Email、Teams 等)。
 //
-// 環境變數命名規則(放在「使用此 Library 的主專案」的指令碼屬性):
+// 環境變數命名規則(放在「這個 library 自己」的指令碼屬性):
 //   JIRA_MESSAGE_WEBHOOK_URL  → Google Chat incoming webhook URL
 //
-// 外部使用範例(假設掛載識別名為 NotifyEnvLib):
-//   const notify = NotifyEnvLib.notifyEnvLib();
+// 外部使用範例(假設掛載識別名為 NotifyWebhookLib):
+//   const notify = NotifyWebhookLib.notifyWebhookLib();
 //   const url = notify.getJiraMessageWebhookUrl();
 //   notify.printStatus();
 // ==========================================================================
 
 
 // ==========================================================================
-// NotifyEnvLib (動態 class)
+// NotifyWebhookLib (動態 class)
 // --------------------------------------------------------------------------
 // 透過 new 建立 instance,所有方法都是 instance method。
-// 沒有狀態,不需要單例——每次呼叫 notifyEnvLib() 都是新的一個。
+// 沒有狀態,不需要單例——每次呼叫 notifyWebhookLib() 都是新的一個。
 // class 只是用來封裝、避免這些方法變成一堆各自獨立的全域 function
 // (GAS 共用一個全域命名空間,散裝 function 容易撞名)。
 // ==========================================================================
-class NotifyEnvLib {
+class NotifyWebhookLib {
 
   /**
    * 建構子:不接受參數,所有環境變數從 PropertiesService 讀取
@@ -80,7 +80,7 @@ class NotifyEnvLib {
    * 列印環境變數設定狀態到 Logger
    */
   printStatus() {
-    Logger.log('========== NotifyEnvLib 環境變數設定狀態 ==========');
+    Logger.log('========== NotifyWebhookLib 環境變數設定狀態 ==========');
     this.status().forEach(s => {
       const symbol = s.hasValue ? '✓' : (s.required ? '✗' : '○');
       const reqText = s.required ? '[必填]' : '[選填]';
@@ -109,13 +109,13 @@ class NotifyEnvLib {
 // ==========================================================================
 
 /**
- * 取得 NotifyEnvLib instance
- * @return {NotifyEnvLib}
+ * 取得 NotifyWebhookLib instance
+ * @return {NotifyWebhookLib}
  */
-function notifyEnvLib() {
-  return new NotifyEnvLib();
+function notifyWebhookLib() {
+  return new NotifyWebhookLib();
 }
 
 function printWebhookStatus(){
-  notifyEnvLib().printStatus()
+  notifyWebhookLib().printStatus()
 }

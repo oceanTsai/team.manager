@@ -1,6 +1,6 @@
 # quarterly-tickets
 
-> 依賴 Library：**`JiraIdentityLib`**（Jira 認證）、**`NotifyEnvLib`**（webhook 設定）、**`Notify`**（發送）
+> 依賴 Library：**`JiraIdentityLib`**（Jira 認證）、**`NotifyWebhookLib`**（webhook 設定）、**`Notify`**（發送）
 
 每季在指定 Epic 底下建立固定的會議記工時單，建立完透過通知器發送結果通知。
 
@@ -14,4 +14,4 @@
 
 ## 部署狀態
 
-規劃中，尚未建立對應的 Apps Script 專案（需要新 scriptId）。`appsscript.json` 裡 `JiraIdentityLib`、`NotifyEnvLib` 兩個 library 的 `libraryId` 先放了 `TODO_...` 佔位字串，等 [[jira-identity-lib]] 和 [[notify-env-lib]] 都部署出真正的 scriptId 之後要回來補上，否則這個專案掛載不到依賴。
+規劃中，尚未建立對應的 Apps Script 專案（需要新 scriptId）。`appsscript.json` 裡 `JiraIdentityLib`、`NotifyWebhookLib` 兩個 library 的 `libraryId` 先放了 `TODO_...` 佔位字串，等 [[jira-identity-lib]] 和 [[notify-webhook-lib]] 都部署出真正的 scriptId 之後要回來補上，否則這個專案掛載不到依賴。
