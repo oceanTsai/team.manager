@@ -32,7 +32,7 @@ class NotifyEnvLib {
      * required = true → 沒設會拋錯
      * required = false → 沒設回傳 null
      */
-    this.envKeys = [
+    this._envKeys = [
       {
         key: 'JIRA_MESSAGE_WEBHOOK_URL',
         required: false,
@@ -66,7 +66,7 @@ class NotifyEnvLib {
    */
   status() {
     const props = PropertiesService.getScriptProperties();
-    return this.envKeys.map(item => ({
+    return this._envKeys.map(item => ({
       key: item.key,
       hasValue: !!props.getProperty(item.key),
       required: item.required,
