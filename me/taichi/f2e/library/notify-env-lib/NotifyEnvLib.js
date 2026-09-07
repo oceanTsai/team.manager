@@ -1,5 +1,5 @@
 // ==========================================================================
-// NotifyEnvLib.gs - 通知相關環境變數 Library(動態 class,單例模式)
+// NotifyEnvLib.gs - 通知相關環境變數 Library
 // --------------------------------------------------------------------------
 // 集中管理所有「通知管道」相關的環境變數。
 // 目前包含 Google Chat 的 Webhook URL,未來可擴充其他管道
@@ -9,7 +9,7 @@
 //   JIRA_MESSAGE_WEBHOOK_URL  → Google Chat incoming webhook URL
 //
 // 外部使用範例(假設掛載識別名為 NotifyEnvLib):
-//   const notify = NotifyEnvLib.notifyEnvLib();      // 取得單例
+//   const notify = NotifyEnvLib.notifyEnvLib();
 //   const url = notify.getJiraMessageWebhookUrl();
 //   notify.printStatus();
 // ==========================================================================
@@ -19,7 +19,9 @@
 // NotifyEnvLib (動態 class)
 // --------------------------------------------------------------------------
 // 透過 new 建立 instance,所有方法都是 instance method。
-// 使用單例模式管理:外部用 notifyEnvLib() 取得唯一實例。
+// 沒有狀態,不需要單例——每次呼叫 notifyEnvLib() 都是新的一個。
+// class 只是用來封裝、避免這些方法變成一堆各自獨立的全域 function
+// (GAS 共用一個全域命名空間,散裝 function 容易撞名)。
 // ==========================================================================
 class NotifyEnvLib {
 
@@ -103,24 +105,15 @@ class NotifyEnvLib {
 
 
 // ==========================================================================
-// 單例存放區
-// ==========================================================================
-let _notifyEnvLibInstance = null;
-
-
-// ==========================================================================
 // 對外暴露的頂層 API
 // ==========================================================================
 
 /**
- * 取得 NotifyEnvLib 單例 instance
+ * 取得 NotifyEnvLib instance
  * @return {NotifyEnvLib}
  */
 function notifyEnvLib() {
-  if (!_notifyEnvLibInstance) {
-    _notifyEnvLibInstance = new NotifyEnvLib();
-  }
-  return _notifyEnvLibInstance;
+  return new NotifyEnvLib();
 }
 
 function printWebhookStatus(){
