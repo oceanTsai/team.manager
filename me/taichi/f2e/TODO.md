@@ -9,6 +9,7 @@
 
 - B、A、C、N、H 項目已修好並已提交，`scrum/retrospective` 的測試也已補齊並跟上新介面
 - `library/notify-webhook-lib`（原 `notify-env-lib`，已改名避免跟 `notify-lib` 搞混）：命名問題（`testNotifyEnvLib()`、`envKeys` 缺 `_`）已修好；`_getRequired()` 死碼已刪除，I（跟 jira-identity-lib 重複實作）因此一併解決；沒有實際效益的單例快取也已拿掉（class 封裝本身保留，只拿掉快取邏輯）。這個資料夾這輪全部處理完
+- `library/jira-identity-lib`：跟 `notify-webhook-lib` 同源的沒有效益的獨體快取已拿掉，其餘發現見下方「四、四個 library 複查發現」
 - `scrum/retrospective` 已完成重構：拆成單一職責的類別、依賴由建構子注入
 - `node me/taichi/f2e/test/run.js` 全部通過，共 99 個檢查（4 組，含新加的 `test/retrospective/prepareRetro.test.js`，覆蓋 B 的過期檢查與 A 的查詢次數）
 - **尚未部署**——`me/` 底下沒有任何 `.clasp.json`
@@ -79,7 +80,29 @@ webhook 失效時流程照常走完，但**沒有人收到通知，也不會有�
 
 ---
 
-## 四、從未審查過的專案（約 3700 行）
+## 四、四個 library 複查發現（`infra-lib`／`jira-identity-lib`／`notify-lib`／`notify-webhook-lib`）
+
+2026-09-10 全部重新看過一輪，找到以下項目（項目 1「`jira-identity-lib` 沒有效益的獨體快取」已修好並提交）：
+
+| 編號 | 位置 | 內容 | 分級 |
+|---|---|---|---|
+| 2 | `JiraIdentityLib.js:7` | 程式碼註解寫「放在使用此 Library 的主專案的指令碼屬性」，跟同檔案 README 相反，是漏改的錯誤文件 | 🟡 |
+| 3 | `notify-lib/testChatNotifier.js` | 名為 test、實為會真的發送真實 Chat 訊息的診斷工具，跟已修過的 `testReminderNotifier()` 同一種問題 | 🔴 |
+| 4 | `JiraIdentityLib.js:46` | `const User = Object.freeze({...})` 用 `const` 宣告，GAS library 不會匯出，跟 `infra-lib` 的 `var DriveMime` 做法不一致，目前沒人呼叫還沒爆 | 🟡 |
+| 5 | `infra-lib/SheetClient.js` | 整份 251 行、16 個方法全部零呼叫者 | 🟢 擱置（預先開發的 library API，不當死碼處理） |
+| 6 | `infra-lib/DriveClient.js` | 7 個方法零呼叫者 | 🟢 擱置（同上） |
+| 7 | `infra-lib/FormClient.js` | 13 個方法零呼叫者 | 🟢 擱置（同上） |
+| 8 | `jira-identity-lib` 第 247-265 行 | 18 個頂層包裝函式零呼叫者 | 🟢 |
+| 9 | `jira-identity-lib` | 9 個具名使用者 sugar method、`getEmail()`、`getToken()` 零呼叫者 | 🟢 |
+| 10 | `jira-identity-lib`、`notify-webhook-lib` | `status()` 方法名是名詞不是動詞 | 🟢 |
+| 11 | 跨 library | 工廠函式命名不一致（`create*` vs 小寫 class 名） | 🟢 |
+| 12 | `SheetClient.js:175-183` `setValues()` | 沒有防呆檢查空陣列，傳 `[]` 會拋出難懂的原生錯誤；`appendRows()` 有做這個檢查，是漏掉的不一致 | 🟡 |
+| 13 | `SheetClient.js:137-154` `getRow()`/`getColumn()` | 工作表完全空的時候，會因為範圍高度/寬度是 0 而拋出原生錯誤 | 🟡 |
+| 14 | `SheetClient.js:31,34` | `this.spreadsheetId`、`this.spreadsheet` 是公開欄位沒加 `_` 前綴，違反專案規範 | 🟢 |
+
+---
+
+## 五、從未審查過的專案（約 3700 行）
 
 | 專案 | 行數 |
 |---|---|
@@ -93,7 +116,7 @@ webhook 失效時流程照常走完，但**沒有人收到通知，也不會有�
 
 ---
 
-## 五、懸而未決的討論
+## 六、懸而未決的討論
 
 ### M. 建構子要不要改用 `this.options`
 
@@ -133,10 +156,12 @@ webhook 失效時流程照常走完，但**沒有人收到通知，也不會有�
 
 ## 建議的處理順序
 
-1. **G**（影響最廣，通知靜默失敗）
-2. **J → K**（部署設定，做完才能真的上線）
-3. **D / M**（優先度較低）
-4. **四**（未審查的專案，建議一個一個過）
+1. **3**（`testChatNotifier()` 真實副作用測試函式，影響最急）
+2. **G**（影響最廣，通知靜默失敗）
+3. **J → K**（部署設定，做完才能真的上線）
+4. **2 / 4 / 12 / 13**（四裡面分級較高的）
+5. **D / M / 其餘四的項目**（優先度較低）
+6. **五**（未審查的專案，建議一個一個過）
 
 ## 怎麼跑測試
 
