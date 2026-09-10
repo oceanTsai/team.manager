@@ -1,5 +1,5 @@
 // ==========================================================================
-// JiraIdentityLib.gs - Jira 使用者身份 Library(動態 class,單例模式)
+// JiraIdentityLib.gs - Jira 使用者身份 Library
 // --------------------------------------------------------------------------
 // 集中管理 Jira 相關的環境變數(URL、admin 認證、各使用者 email/token),
 // 讓呼叫端能選一個具名使用者的身份去操作 Jira。
@@ -60,13 +60,13 @@ const User = Object.freeze({
 // JiraIdentityLib (動態 class)
 // --------------------------------------------------------------------------
 // 透過 new 建立 instance,所有方法都是 instance method。
-// 使用單例模式管理:外部用 jiraIdentityLib() 取得唯一實例。
+// 沒有狀態,不需要單例——每次呼叫 jiraIdentityLib() 都是新的一個。
+// class 只是用來封裝、避免這些方法變成一堆各自獨立的全域 function
+// (GAS 共用一個全域命名空間,散裝 function 容易撞名)。
 // ==========================================================================
 class JiraIdentityLib {
 
-  constructor() {
-    // 預留:未來如果要做 eager load 或快取,可在此處初始化
-  }
+  constructor() {}
 
   // ------------------------------------------------------------------------
   // Jira 網域
@@ -237,20 +237,11 @@ class JiraIdentityLib {
 
 
 // ==========================================================================
-// 單例存放區
-// ==========================================================================
-let _jiraIdentityLibInstance = null;
-
-
-// ==========================================================================
 // 對外暴露的頂層 API
 // ==========================================================================
 
 function jiraIdentityLib() {
-  if (!_jiraIdentityLibInstance) {
-    _jiraIdentityLibInstance = new JiraIdentityLib();
-  }
-  return _jiraIdentityLibInstance;
+  return new JiraIdentityLib();
 }
 
 function getJiraUrl()       { return jiraIdentityLib().getJiraUrl(); }
