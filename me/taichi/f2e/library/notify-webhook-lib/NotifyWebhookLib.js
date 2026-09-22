@@ -66,7 +66,7 @@ class NotifyWebhookLib {
    * 取得所有環境變數的設定狀態
    * @return {Array<{key:string, hasValue:boolean, required:boolean, description:string}>}
    */
-  status() {
+  getStatus() {
     const props = PropertiesService.getScriptProperties();
     return this._envKeys.map(item => ({
       key: item.key,
@@ -81,7 +81,7 @@ class NotifyWebhookLib {
    */
   printStatus() {
     Logger.log('========== NotifyWebhookLib 環境變數設定狀態 ==========');
-    this.status().forEach(s => {
+    this.getStatus().forEach(s => {
       const symbol = s.hasValue ? '✓' : (s.required ? '✗' : '○');
       const reqText = s.required ? '[必填]' : '[選填]';
       Logger.log(`${symbol} ${reqText} ${s.key.padEnd(28)} - ${s.description}`);

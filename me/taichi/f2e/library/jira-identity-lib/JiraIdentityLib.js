@@ -174,7 +174,7 @@ class JiraIdentityLib {
    * 取得所有環境變數的設定狀態(用於診斷)
    * @return {Array<{key:string, hasValue:boolean}>}
    */
-  status() {
+  getStatus() {
     const props = PropertiesService.getScriptProperties();
     const keys = [
       'JIRA_URL',
@@ -195,7 +195,7 @@ class JiraIdentityLib {
    */
   printStatus() {
     Logger.log('========== JiraIdentityLib 環境變數設定狀態 ==========');
-    this.status().forEach(s => {
+    this.getStatus().forEach(s => {
       const symbol = s.hasValue ? '✓' : '✗';
       Logger.log(`${symbol} ${s.key}`);
     });
