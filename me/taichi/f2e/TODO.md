@@ -1,7 +1,7 @@
 # 待處理清單
 
 > 這份文件是**自足的**——新開一個對話直接讀這裡就能接手，不需要先前的對話記錄。
-> 最後更新：2026-09-07
+> 最後更新：2026-09-22
 >
 > **範圍**：只列 `me/` 底下的任務。repo 根目錄的舊資料夾（`bugAssignment/`、`envLib/`、`infraLib/`、`jiraLogMigrate/`、`notifyLib/`、`report/`）屬於另一個 Google 空間、線上還在跑，不在這次重構範圍內，不列入。
 
@@ -9,24 +9,14 @@
 
 - B、A、C、N、H 項目已修好並已提交，`scrum/retrospective` 的測試也已補齊並跟上新介面
 - `library/notify-webhook-lib`（原 `notify-env-lib`，已改名避免跟 `notify-lib` 搞混）：命名問題（`testNotifyEnvLib()`、`envKeys` 缺 `_`）已修好；`_getRequired()` 死碼已刪除，I（跟 jira-identity-lib 重複實作）因此一併解決；沒有實際效益的單例快取也已拿掉（class 封裝本身保留，只拿掉快取邏輯）。這個資料夾這輪全部處理完
-- `library/jira-identity-lib`：跟 `notify-webhook-lib` 同源的沒有效益的獨體快取已拿掉，其餘發現見下方「四、四個 library 複查發現」
+- `library/jira-identity-lib`：跟 `notify-webhook-lib` 同源的沒有效益的獨體快取已拿掉，其餘發現見下方「三、四個 library 複查發現」
 - `scrum/retrospective` 已完成重構：拆成單一職責的類別、依賴由建構子注入
 - `node me/taichi/f2e/test/run.js` 全部通過，共 99 個檢查（4 組，含新加的 `test/retrospective/prepareRetro.test.js`，覆蓋 B 的過期檢查與 A 的查詢次數）
 - **尚未部署**——`me/` 底下沒有任何 `.clasp.json`
 
 ---
 
-## 一、`scrum/retrospective` 核心程式碼
-
-### D. 依賴注入只做了一半 🟡
-
-**位置**：`SprintFinder.js`、`SprintFolderBuilder.js`
-
-兩者仍直接引用全域 `Infra.DriveMime`。不過這是**常數**不是服務，可以主張是可接受的例外——優先度最低。
-
----
-
-## 二、`library`（跨專案）
+## 一、`library`（跨專案）
 
 ### G. 通知發送失敗被吞掉 🔴
 
@@ -45,7 +35,7 @@ webhook 失效時流程照常走完，但**沒有人收到通知，也不會有�
 
 ---
 
-## 三、部署設定
+## 二、部署設定
 
 ### J. `me/` 底下沒有任何 `.clasp.json` 🔴
 
@@ -80,7 +70,7 @@ webhook 失效時流程照常走完，但**沒有人收到通知，也不會有�
 
 ---
 
-## 四、四個 library 複查發現（`infra-lib`／`jira-identity-lib`／`notify-lib`／`notify-webhook-lib`）
+## 三、四個 library 複查發現（`infra-lib`／`jira-identity-lib`／`notify-lib`／`notify-webhook-lib`）
 
 2026-09-10 全部重新看過一輪，找到以下項目（項目 1「`jira-identity-lib` 沒有效益的獨體快取」已修好並提交）：
 
@@ -102,7 +92,7 @@ webhook 失效時流程照常走完，但**沒有人收到通知，也不會有�
 
 ---
 
-## 五、從未審查過的專案（約 3700 行）
+## 四、從未審查過的專案（約 3700 行）
 
 | 專案 | 行數 |
 |---|---|
@@ -116,7 +106,7 @@ webhook 失效時流程照常走完，但**沒有人收到通知，也不會有�
 
 ---
 
-## 六、懸而未決的討論
+## 五、懸而未決的討論
 
 ### M. 建構子要不要改用 `this.options`
 
@@ -152,6 +142,8 @@ webhook 失效時流程照常走完，但**沒有人收到通知，也不會有�
 
 8. **不使用預先 return（guard clause）**，改用單一出口。`throw` 與 `switch` 分派表不算。
 
+9. **`SprintFinder`/`SprintFolderBuilder` 不用把 `Infra.DriveMime` 改成建構子注入。** `Infra` 本身在 GAS 就是掛載的 library，呼叫端本來就是用 `Infra.xxx` 這種全域方式在用；`DriveMime` 只是常數不是服務，注入它換不到測試或耦合上的實際好處。已經試著改過一輪（牽動 5 個檔案 11 個呼叫點）又復原，維持現狀。
+
 ---
 
 ## 建議的處理順序
@@ -159,9 +151,9 @@ webhook 失效時流程照常走完，但**沒有人收到通知，也不會有�
 1. **3**（`testChatNotifier()` 真實副作用測試函式，影響最急）
 2. **G**（影響最廣，通知靜默失敗）
 3. **J → K**（部署設定，做完才能真的上線）
-4. **2 / 4 / 12 / 13**（四裡面分級較高的）
-5. **D / M / 其餘四的項目**（優先度較低）
-6. **五**（未審查的專案，建議一個一個過）
+4. **2 / 4 / 12 / 13**（三裡面分級較高的）
+5. **M / 其餘三的項目**（優先度較低）
+6. **四**（未審查的專案，建議一個一個過）
 
 ## 怎麼跑測試
 
