@@ -27,11 +27,11 @@ class SheetClient {
    * @param {string} spreadsheetId
    */
   constructor(spreadsheetId) {
-    /** @type {string} */
-    this.spreadsheetId = spreadsheetId;
+    /** @private @type {string} */
+    this._spreadsheetId = spreadsheetId;
 
-    /** @type {GoogleAppsScript.Spreadsheet.Spreadsheet} */
-    this.spreadsheet = SpreadsheetApp.openById(spreadsheetId);
+    /** @private @type {GoogleAppsScript.Spreadsheet.Spreadsheet} */
+    this._spreadsheet = SpreadsheetApp.openById(spreadsheetId);
 
     /** @private @type {Object<string, GoogleAppsScript.Spreadsheet.Sheet>} */
     this._sheetCache = {};
@@ -47,7 +47,7 @@ class SheetClient {
    */
   getSheet(sheetName) {
     if (!this._sheetCache[sheetName]) {
-      const sheet = this.spreadsheet.getSheetByName(sheetName);
+      const sheet = this._spreadsheet.getSheetByName(sheetName);
       if (!sheet) throw new Error(`找不到工作表「${sheetName}」`);
       this._sheetCache[sheetName] = sheet;
     }
@@ -59,7 +59,7 @@ class SheetClient {
    * @returns {string[]}
    */
   getSheetNames() {
-    return this.spreadsheet.getSheets().map((s) => s.getName());
+    return this._spreadsheet.getSheets().map((s) => s.getName());
   }
 
   /**
@@ -68,7 +68,7 @@ class SheetClient {
    * @returns {boolean}
    */
   sheetExists(sheetName) {
-    return this.spreadsheet.getSheetByName(sheetName) !== null;
+    return this._spreadsheet.getSheetByName(sheetName) !== null;
   }
 
   /**
@@ -77,7 +77,7 @@ class SheetClient {
    * @returns {GoogleAppsScript.Spreadsheet.Sheet}
    */
   createSheet(sheetName) {
-    const sheet = this.spreadsheet.insertSheet(sheetName);
+    const sheet = this._spreadsheet.insertSheet(sheetName);
     this._sheetCache[sheetName] = sheet;
     return sheet;
   }
@@ -87,9 +87,9 @@ class SheetClient {
    * @param {string} sheetName
    */
   deleteSheet(sheetName) {
-    const sheet = this.spreadsheet.getSheetByName(sheetName);
+    const sheet = this._spreadsheet.getSheetByName(sheetName);
     if (sheet) {
-      this.spreadsheet.deleteSheet(sheet);
+      this._spreadsheet.deleteSheet(sheet);
       delete this._sheetCache[sheetName];
     }
   }

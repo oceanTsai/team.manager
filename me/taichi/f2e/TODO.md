@@ -88,7 +88,7 @@ webhook 失效時流程照常走完，但**沒有人收到通知，也不會有�
 | 11 | 跨 library | 工廠函式命名不一致（`create*` vs 小寫 class 名） | 🟢 |
 | 12 | `SheetClient.js:175-183` `setValues()` | 沒有防呆檢查空陣列，傳 `[]` 會拋出難懂的原生錯誤；`appendRows()` 有做這個檢查，是漏掉的不一致 | 🟡 |
 | 13 | `SheetClient.js:137-154` `getRow()`/`getColumn()` | 工作表完全空的時候，會因為範圍高度/寬度是 0 而拋出原生錯誤 | 🟡 |
-| 14 | `SheetClient.js:31,34` | `this.spreadsheetId`、`this.spreadsheet` 是公開欄位沒加 `_` 前綴，違反專案規範 | 🟢 |
+| ~~14~~ | ~~`SheetClient.js:31,34`~~ | ~~`this.spreadsheetId`、`this.spreadsheet` 是公開欄位沒加 `_` 前綴~~——**已修好**，改成 `this._spreadsheetId`、`this._spreadsheet`，類別內部所有用到的地方同步更新 | ✅ |
 
 ---
 
