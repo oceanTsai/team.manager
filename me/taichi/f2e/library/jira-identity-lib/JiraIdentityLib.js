@@ -245,22 +245,7 @@ function jiraIdentityLib() {
   return new JiraIdentityLib();
 }
 
-function getJiraUrl()       { return jiraIdentityLib().getJiraUrl(); }
-function getAdmin()         { return jiraIdentityLib().getAdmin(); }
-function getAdminLead()     { return jiraIdentityLib().getAdminLead(); }
-function getEmail(userKey)  { return jiraIdentityLib().getEmail(userKey); }
-function getToken(userKey)  { return jiraIdentityLib().getToken(userKey); }
-function getUser(userKey)   { return jiraIdentityLib().getUser(userKey); }
-
-function getOcean()   { return jiraIdentityLib().getOcean(); }
-function getAgnes()   { return jiraIdentityLib().getAgnes(); }
-function getBrian()   { return jiraIdentityLib().getBrian(); }
-function getEnya()    { return jiraIdentityLib().getEnya(); }
-function getJune()    { return jiraIdentityLib().getJune(); }
-function getPedro()   { return jiraIdentityLib().getPedro(); }
-function getSamura()  { return jiraIdentityLib().getSamura(); }
-function getSteven()  { return jiraIdentityLib().getSteven(); }
-function getWilliam() { return jiraIdentityLib().getWilliam(); }
-
-function status()      { return jiraIdentityLib().status(); }
+/**
+ * 【可執行】檢查所有 Jira 相關指令碼屬性的設定狀態
+ */
 function printStatus() { jiraIdentityLib().printStatus(); }

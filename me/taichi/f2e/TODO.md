@@ -82,7 +82,7 @@ webhook 失效時流程照常走完，但**沒有人收到通知，也不會有�
 | 5 | `infra-lib/SheetClient.js` | 整份 251 行、16 個方法全部零呼叫者 | 🟢 擱置（預先開發的 library API，不當死碼處理） |
 | 6 | `infra-lib/DriveClient.js` | 7 個方法零呼叫者 | 🟢 擱置（同上） |
 | 7 | `infra-lib/FormClient.js` | 13 個方法零呼叫者 | 🟢 擱置（同上） |
-| 8 | `jira-identity-lib` 第 247-265 行 | 18 個頂層包裝函式零呼叫者 | 🟢 |
+| ~~8~~ | ~~`jira-identity-lib` 第 247-265 行~~ | ~~18 個頂層包裝函式零呼叫者~~——**已處理**：刪掉 16 個純重複的（`getJiraUrl`/`getAdmin`/`getOcean`~`getWilliam`/`status`），只留 `jiraIdentityLib()`（真正的進入點）跟 `printStatus()`（保留當手動診斷工具，跟 `printWebhookStatus()` 同一類） | ✅ |
 | 9 | `jira-identity-lib` | 9 個具名使用者 sugar method、`getEmail()`、`getToken()` 零呼叫者 | 🟢 |
 | 10 | `jira-identity-lib`、`notify-webhook-lib` | `status()` 方法名是名詞不是動詞 | 🟢 |
 | 11 | 跨 library | 工廠函式命名不一致（`create*` vs 小寫 class 名） | 🟢 |
