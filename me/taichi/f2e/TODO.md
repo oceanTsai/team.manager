@@ -77,7 +77,7 @@ webhook 失效時流程照常走完，但**沒有人收到通知，也不會有�
 | 編號 | 位置 | 內容 | 分級 |
 |---|---|---|---|
 | 2 | `JiraIdentityLib.js:7` | 程式碼註解寫「放在使用此 Library 的主專案的指令碼屬性」，跟同檔案 README 相反，是漏改的錯誤文件 | 🟡 |
-| 3 | `notify-lib/testChatNotifier.js` | 名為 test、實為會真的發送真實 Chat 訊息的診斷工具，跟已修過的 `testReminderNotifier()` 同一種問題 | 🔴 |
+| ~~3~~ | ~~`notify-lib/testChatNotifier.js`~~ | ~~名為 test、實為會真的發送真實 Chat 訊息的診斷工具~~——**已評估決定不改**：跟 `testReminderNotifier()` 情境不同，`notify-lib` 是純 library 沒有其他排程入口跟它擠在同一個選單，讀的 `CHAT_DEVLOP_WEBHOOK_URL` 沒設定會優雅結束，不會誤打正式頻道，風險低 | ～ |
 | 4 | `JiraIdentityLib.js:46` | `const User = Object.freeze({...})` 用 `const` 宣告，GAS library 不會匯出，跟 `infra-lib` 的 `var DriveMime` 做法不一致，目前沒人呼叫還沒爆 | 🟡 |
 | 5 | `infra-lib/SheetClient.js` | 整份 251 行、16 個方法全部零呼叫者 | 🟢 擱置（預先開發的 library API，不當死碼處理） |
 | 6 | `infra-lib/DriveClient.js` | 7 個方法零呼叫者 | 🟢 擱置（同上） |
@@ -148,12 +148,11 @@ webhook 失效時流程照常走完，但**沒有人收到通知，也不會有�
 
 ## 建議的處理順序
 
-1. **3**（`testChatNotifier()` 真實副作用測試函式，影響最急）
-2. **G**（影響最廣，通知靜默失敗）
-3. **J → K**（部署設定，做完才能真的上線）
-4. **2 / 4 / 12 / 13**（三裡面分級較高的）
-5. **M / 其餘三的項目**（優先度較低）
-6. **四**（未審查的專案，建議一個一個過）
+1. **G**（影響最廣，通知靜默失敗）
+2. **J → K**（部署設定，做完才能真的上線）
+3. **2 / 4 / 12 / 13**（三裡面分級較高的）
+4. **M / 其餘三的項目**（優先度較低）
+5. **四**（未審查的專案，建議一個一個過）
 
 ## 怎麼跑測試
 
