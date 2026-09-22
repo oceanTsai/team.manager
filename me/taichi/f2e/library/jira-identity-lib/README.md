@@ -20,7 +20,7 @@
 ## 使用範例
 
 ```js
-const jira = JiraIdentityLib.jiraIdentityLib();
+const jira = JiraIdentityLib.createJiraIdentityLib();
 
 // 部長 admin
 const admin = jira.getAdmin();

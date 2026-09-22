@@ -33,7 +33,7 @@
 // 【建構子參數】
 // ==========================================================================
 //
-//   jiraEnv             {Object}  必填  從 JiraIdentityLib.jiraIdentityLib() 取得的單例
+//   jiraEnv             {Object}  必填  從 JiraIdentityLib.createJiraIdentityLib() 取得的實例
 //   userMapping         {Object}  必填  使用者名字對應表,格式如下:
 //                                       {
 //                                         BRIAN: ['Brian Chao', '趙軒弘', 'Brian'],
@@ -165,7 +165,7 @@
 //
 //   function migrateToQuarters() {
 //     const migrator = new WorklogMigrator({
-//       jiraEnv: JiraIdentityLib.jiraIdentityLib(),
+//       jiraEnv: JiraIdentityLib.createJiraIdentityLib(),
 //       userMapping: USER_MAPPING
 //     });
 //
@@ -191,7 +191,7 @@ class WorklogMigrator {
 
   /**
    * @param {Object} opts
-   * @param {Object} opts.jiraEnv         - JiraIdentityLib.jiraIdentityLib() 取得的單例
+   * @param {Object} opts.jiraEnv         - JiraIdentityLib.createJiraIdentityLib() 取得的實例
    * @param {Object} opts.userMapping     - { KEY: [...name aliases] }
    * @param {number} [opts.maxRuntimeSeconds=330] - 執行時間上限(秒),預設 5.5 分鐘
    * @param {number} [opts.sleepMs=300]   - 每筆處理後 sleep 毫秒數,避免 rate limit

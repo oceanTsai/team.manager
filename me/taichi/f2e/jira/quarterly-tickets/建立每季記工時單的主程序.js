@@ -112,9 +112,9 @@ function manualCreateSpecificQuarter() {
 //   - template 在主專案 new 出來
 // ==========================================================================
 function _createInstance() {
-  const jiraEnv = JiraIdentityLib.jiraIdentityLib();
+  const jiraEnv = JiraIdentityLib.createJiraIdentityLib();
 
-  const webhookUrl = NotifyWebhookLib.notifyWebhookLib().getJiraMessageWebhookUrl();
+  const webhookUrl = NotifyWebhookLib.createNotifyWebhookLib().getJiraMessageWebhookUrl();
   const notifier = webhookUrl ? Notify.createChatNotifier(webhookUrl) : null;
   const template = webhookUrl ? new TicketCreationTemplate() : null;
 

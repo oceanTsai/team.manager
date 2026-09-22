@@ -9,7 +9,7 @@
 //   JIRA_MESSAGE_WEBHOOK_URL  → Google Chat incoming webhook URL
 //
 // 外部使用範例(假設掛載識別名為 NotifyWebhookLib):
-//   const notify = NotifyWebhookLib.notifyWebhookLib();
+//   const notify = NotifyWebhookLib.createNotifyWebhookLib();
 //   const url = notify.getJiraMessageWebhookUrl();
 //   notify.printStatus();
 // ==========================================================================
@@ -19,7 +19,7 @@
 // NotifyWebhookLib (動態 class)
 // --------------------------------------------------------------------------
 // 透過 new 建立 instance,所有方法都是 instance method。
-// 沒有狀態,不需要單例——每次呼叫 notifyWebhookLib() 都是新的一個。
+// 沒有狀態,不需要單例——每次呼叫 createNotifyWebhookLib() 都是新的一個。
 // class 只是用來封裝、避免這些方法變成一堆各自獨立的全域 function
 // (GAS 共用一個全域命名空間,散裝 function 容易撞名)。
 // ==========================================================================
@@ -112,10 +112,10 @@ class NotifyWebhookLib {
  * 取得 NotifyWebhookLib instance
  * @return {NotifyWebhookLib}
  */
-function notifyWebhookLib() {
+function createNotifyWebhookLib() {
   return new NotifyWebhookLib();
 }
 
 function printWebhookStatus(){
-  notifyWebhookLib().printStatus()
+  createNotifyWebhookLib().printStatus()
 }

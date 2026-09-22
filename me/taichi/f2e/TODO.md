@@ -82,10 +82,10 @@ webhook 失效時流程照常走完，但**沒有人收到通知，也不會有�
 | 5 | `infra-lib/SheetClient.js` | 整份 251 行、16 個方法全部零呼叫者 | 🟢 擱置（預先開發的 library API，不當死碼處理） |
 | 6 | `infra-lib/DriveClient.js` | 7 個方法零呼叫者 | 🟢 擱置（同上） |
 | 7 | `infra-lib/FormClient.js` | 13 個方法零呼叫者 | 🟢 擱置（同上） |
-| ~~8~~ | ~~`jira-identity-lib` 第 247-265 行~~ | ~~18 個頂層包裝函式零呼叫者~~——**已處理**：刪掉 16 個純重複的（`getJiraUrl`/`getAdmin`/`getOcean`~`getWilliam`/`status`），只留 `jiraIdentityLib()`（真正的進入點）跟 `printStatus()`（保留當手動診斷工具，跟 `printWebhookStatus()` 同一類） | ✅ |
+| ~~8~~ | ~~`jira-identity-lib` 第 247-265 行~~ | ~~18 個頂層包裝函式零呼叫者~~——**已處理**：刪掉 16 個純重複的（`getJiraUrl`/`getAdmin`/`getOcean`~`getWilliam`/`status`），只留 `jiraIdentityLib()`（真正的進入點，後續在項目 11 改名為 `createJiraIdentityLib()`）跟 `printStatus()`（保留當手動診斷工具，跟 `printWebhookStatus()` 同一類） | ✅ |
 | 9 | `jira-identity-lib` | 9 個具名使用者 sugar method、`getEmail()`、`getToken()` 零呼叫者 | 🟢 擱置（是實例方法不是全域函式，沒有撞名風險；跟 `getAdminLead()` 同一類「固定身份」的合理便利寫法，只是目前沒有固定身份的情境用到，比照 `SheetClient` 處理） |
 | ~~10~~ | ~~`jira-identity-lib`、`notify-webhook-lib`~~ | ~~`status()` 方法名是名詞不是動詞~~——**已修好**，兩個檔案都改成 `getStatus()`，`printStatus()` 內部呼叫處同步更新 | ✅ |
-| 11 | 跨 library | 工廠函式命名不一致（`create*` vs 小寫 class 名） | 🟢 |
+| ~~11~~ | ~~跨 library~~ | ~~工廠函式命名不一致（`create*` vs 小寫 class 名）~~——**已修好**：`jiraIdentityLib()` → `createJiraIdentityLib()`、`notifyWebhookLib()` → `createNotifyWebhookLib()`，兩個 library 的 README、呼叫端（`jira/worklog-migrate`、`jira/quarterly-tickets`）都同步更新 | ✅ |
 | 12 | `SheetClient.js:175-183` `setValues()` | 沒有防呆檢查空陣列，傳 `[]` 會拋出難懂的原生錯誤；`appendRows()` 有做這個檢查，是漏掉的不一致 | 🟡 |
 | 13 | `SheetClient.js:137-154` `getRow()`/`getColumn()` | 工作表完全空的時候，會因為範圍高度/寬度是 0 而拋出原生錯誤 | 🟡 |
 | ~~14~~ | ~~`SheetClient.js:31,34`~~ | ~~`this.spreadsheetId`、`this.spreadsheet` 是公開欄位沒加 `_` 前綴~~——**已修好**，改成 `this._spreadsheetId`、`this._spreadsheet`，類別內部所有用到的地方同步更新 | ✅ |

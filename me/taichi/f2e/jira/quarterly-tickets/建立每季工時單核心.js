@@ -32,7 +32,7 @@
 // 【建構子參數】
 // ==========================================================================
 //
-//   jiraEnv     {Object}  必填  從 JiraIdentityLib.jiraIdentityLib() 取得的單例
+//   jiraEnv     {Object}  必填  從 JiraIdentityLib.createJiraIdentityLib() 取得的實例
 //   config      {Object}  必填  會議單設定:
 //                                {
 //                                  parentEpic: 'VIPOP-110',
@@ -52,7 +52,7 @@ class QuarterlyTicketCreator {
 
   /**
    * @param {Object} opts
-   * @param {Object} opts.jiraEnv    - JiraIdentityLib.jiraIdentityLib() 取得的單例
+   * @param {Object} opts.jiraEnv    - JiraIdentityLib.createJiraIdentityLib() 取得的實例
    * @param {Object} opts.config     - 會議單設定 { parentEpic, projectKey, issueType, titles }
    * @param {Object} opts.headers    - 開單用的 auth headers(必填),由外部決定用哪個帳號
    * @param {Object} [opts.notifier] - 通知器(NotifyLib 提供),沒提供就不發通知

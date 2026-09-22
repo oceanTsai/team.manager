@@ -70,7 +70,7 @@ const USER_MAPPING = {
 // ==========================================================================
 function migrateToQuarters() {
   const migrator = new WorklogMigrator({
-    jiraEnv: JiraIdentityLib.jiraIdentityLib(),
+    jiraEnv: JiraIdentityLib.createJiraIdentityLib(),
     userMapping: USER_MAPPING
   });
 
@@ -84,7 +84,7 @@ function migrateToQuarters() {
 // ==========================================================================
 function migrateAnnualToSingle() {
   const migrator = new WorklogMigrator({
-    jiraEnv: JiraIdentityLib.jiraIdentityLib(),
+    jiraEnv: JiraIdentityLib.createJiraIdentityLib(),
     userMapping: USER_MAPPING
   });
 

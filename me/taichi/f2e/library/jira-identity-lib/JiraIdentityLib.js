@@ -15,7 +15,7 @@
 //   JIRA_TOKEN_{KEY}      → 該位 user 的 token
 //
 // 外部使用範例(假設掛載識別名為 JiraIdentityLib):
-//   const jira = JiraIdentityLib.jiraIdentityLib();
+//   const jira = JiraIdentityLib.createJiraIdentityLib();
 //
 //   // 部長 admin
 //   const admin = jira.getAdmin();
@@ -61,7 +61,7 @@ const User = Object.freeze({
 // JiraIdentityLib (動態 class)
 // --------------------------------------------------------------------------
 // 透過 new 建立 instance,所有方法都是 instance method。
-// 沒有狀態,不需要單例——每次呼叫 jiraIdentityLib() 都是新的一個。
+// 沒有狀態,不需要單例——每次呼叫 createJiraIdentityLib() 都是新的一個。
 // class 只是用來封裝、避免這些方法變成一堆各自獨立的全域 function
 // (GAS 共用一個全域命名空間,散裝 function 容易撞名)。
 // ==========================================================================
@@ -241,11 +241,11 @@ class JiraIdentityLib {
 // 對外暴露的頂層 API
 // ==========================================================================
 
-function jiraIdentityLib() {
+function createJiraIdentityLib() {
   return new JiraIdentityLib();
 }
 
 /**
  * 【可執行】檢查所有 Jira 相關指令碼屬性的設定狀態
  */
-function printStatus() { jiraIdentityLib().printStatus(); }
+function printStatus() { createJiraIdentityLib().printStatus(); }

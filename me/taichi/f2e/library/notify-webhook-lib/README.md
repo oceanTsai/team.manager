@@ -17,7 +17,7 @@ Jira 身份認證相關的設定另外在 [[jira-identity-lib]]。
 ## 使用範例
 
 ```js
-const notify = NotifyWebhookLib.notifyWebhookLib();
+const notify = NotifyWebhookLib.createNotifyWebhookLib();
 const url = notify.getJiraMessageWebhookUrl();
 notify.printStatus();
 ```
