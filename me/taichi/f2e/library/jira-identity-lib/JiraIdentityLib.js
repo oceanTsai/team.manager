@@ -4,7 +4,8 @@
 // 集中管理 Jira 相關的環境變數(URL、admin 認證、各使用者 email/token),
 // 讓呼叫端能選一個具名使用者的身份去操作 Jira。
 //
-// 環境變數命名規則(放在「使用此 Library 的主專案」的指令碼屬性):
+// 環境變數命名規則(放在「這個 library 自己」的指令碼屬性——GAS 的指令碼屬性
+// 是不共用資源,library 跟使用它的主專案各自有各自獨立的一份,不會互通):
 //   JIRA_URL              → Jira 網域(全域共用)
 //   JIRA_EMAIL            → Admin(部長)的 email
 //   JIRA_TOKEN            → Admin(部長)的 token

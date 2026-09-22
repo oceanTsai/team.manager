@@ -76,7 +76,7 @@ webhook 失效時流程照常走完，但**沒有人收到通知，也不會有�
 
 | 編號 | 位置 | 內容 | 分級 |
 |---|---|---|---|
-| 2 | `JiraIdentityLib.js:7` | 程式碼註解寫「放在使用此 Library 的主專案的指令碼屬性」，跟同檔案 README 相反，是漏改的錯誤文件 | 🟡 |
+| ~~2~~ | ~~`JiraIdentityLib.js:7`~~ | ~~程式碼註解寫「放在使用此 Library 的主專案的指令碼屬性」，跟同檔案 README 相反~~——**已修好**，改成跟 README 一致的說法 | ✅ |
 | ~~3~~ | ~~`notify-lib/testChatNotifier.js`~~ | ~~名為 test、實為會真的發送真實 Chat 訊息的診斷工具~~——**已評估決定不改**：跟 `testReminderNotifier()` 情境不同，`notify-lib` 是純 library 沒有其他排程入口跟它擠在同一個選單，讀的 `CHAT_DEVLOP_WEBHOOK_URL` 沒設定會優雅結束，不會誤打正式頻道，風險低 | ～ |
 | 4 | `JiraIdentityLib.js:46` | `const User = Object.freeze({...})` 用 `const` 宣告，GAS library 不會匯出，跟 `infra-lib` 的 `var DriveMime` 做法不一致，目前沒人呼叫還沒爆 | 🟡 |
 | 5 | `infra-lib/SheetClient.js` | 整份 251 行、16 個方法全部零呼叫者 | 🟢 擱置（預先開發的 library API，不當死碼處理） |
