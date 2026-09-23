@@ -87,7 +87,7 @@ webhook 失效時流程照常走完，但**沒有人收到通知，也不會有�
 | ~~10~~ | ~~`jira-identity-lib`、`notify-webhook-lib`~~ | ~~`status()` 方法名是名詞不是動詞~~——**已修好**，兩個檔案都改成 `getStatus()`，`printStatus()` 內部呼叫處同步更新 | ✅ |
 | ~~11~~ | ~~跨 library~~ | ~~工廠函式命名不一致（`create*` vs 小寫 class 名）~~——**已修好**：`jiraIdentityLib()` → `createJiraIdentityLib()`、`notifyWebhookLib()` → `createNotifyWebhookLib()`，兩個 library 的 README、呼叫端（`jira/worklog-migrate`、`jira/quarterly-tickets`）都同步更新 | ✅ |
 | ~~12~~ | ~~`SheetClient.js:175-183` `setValues()`~~ | ~~沒有防呆檢查空陣列，傳 `[]` 會拋出難懂的原生錯誤~~——**已修好**：改成主動檢查 `values` 是 `null`/`undefined`/空陣列時，拋出清楚的錯誤訊息（不是靜默不做事——底層 library 不該替呼叫端決定「沒資料是不是正常情況」，應該讓呼叫端自己決定要不要防範，library 負責把錯誤講清楚） | ✅ |
-| 13 | `SheetClient.js:137-154` `getRow()`/`getColumn()` | 工作表完全空的時候，會因為範圍高度/寬度是 0 而拋出原生錯誤 | 🟡 |
+| ~~13~~ | ~~`SheetClient.js:137-154` `getRow()`/`getColumn()`~~ | ~~工作表完全空的時候，會因為範圍高度/寬度是 0 而拋出原生錯誤~~——**已評估決定不改**：查證過（Google 官方社群討論串），`numRows`/`numCols` 傳 0 本來就是原生 API 會拋錯的行為；`getRow()`/`getColumn()` 沒有包任何額外判斷，行為已經跟原生 API 一致，這是底層 library 該有的樣子 | ～ |
 | ~~14~~ | ~~`SheetClient.js:31,34`~~ | ~~`this.spreadsheetId`、`this.spreadsheet` 是公開欄位沒加 `_` 前綴~~——**已修好**，改成 `this._spreadsheetId`、`this._spreadsheet`，類別內部所有用到的地方同步更新 | ✅ |
 
 ---
