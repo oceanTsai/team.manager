@@ -1,7 +1,7 @@
 # 待處理清單
 
 > 這份文件是**自足的**——新開一個對話直接讀這裡就能接手，不需要先前的對話記錄。
-> 最後更新：2026-09-22
+> 最後更新：2026-09-23
 >
 > **範圍**：只列 `me/` 底下的任務。repo 根目錄的舊資料夾（`bugAssignment/`、`envLib/`、`infraLib/`、`jiraLogMigrate/`、`notifyLib/`、`report/`）屬於另一個 Google 空間、線上還在跑，不在這次重構範圍內，不列入。
 
@@ -9,7 +9,7 @@
 
 - B、A、C、N、H 項目已修好並已提交，`scrum/retrospective` 的測試也已補齊並跟上新介面
 - `library/notify-webhook-lib`（原 `notify-env-lib`，已改名避免跟 `notify-lib` 搞混）：命名問題（`testNotifyEnvLib()`、`envKeys` 缺 `_`）已修好；`_getRequired()` 死碼已刪除，I（跟 jira-identity-lib 重複實作）因此一併解決；沒有實際效益的單例快取也已拿掉（class 封裝本身保留，只拿掉快取邏輯）。這個資料夾這輪全部處理完
-- `library/jira-identity-lib`：跟 `notify-webhook-lib` 同源的沒有效益的獨體快取已拿掉，其餘發現見下方「三、四個 library 複查發現」
+- 四個 library（`infra-lib`／`jira-identity-lib`／`notify-lib`／`notify-webhook-lib`）已於 2026-09-10 全部複查完畢並處理完：共 14 項發現，修好 8 項（含 `jira-identity-lib` 的獨體快取、命名一致性、`SheetClient` 欄位與防呆等）、評估後決定不改 3 項（都是查證過情境後判斷風險低或本來就該是這樣）、擱置不當死碼處理 3 項（`SheetClient`/`DriveClient`/`FormClient` 的零呼叫方法、9 個具名 sugar method——都是預先開發的 library API，不是錯誤）。細節不再列出，已是定案
 - `scrum/retrospective` 已完成重構：拆成單一職責的類別、依賴由建構子注入
 - `node me/taichi/f2e/test/run.js` 全部通過，共 99 個檢查（4 組，含新加的 `test/retrospective/prepareRetro.test.js`，覆蓋 B 的過期檢查與 A 的查詢次數）
 - **尚未部署**——`me/` 底下沒有任何 `.clasp.json`
@@ -70,29 +70,7 @@ webhook 失效時流程照常走完，但**沒有人收到通知，也不會有�
 
 ---
 
-## 三、四個 library 複查發現（`infra-lib`／`jira-identity-lib`／`notify-lib`／`notify-webhook-lib`）
-
-2026-09-10 全部重新看過一輪，找到以下項目（項目 1「`jira-identity-lib` 沒有效益的獨體快取」已修好並提交）：
-
-| 編號 | 位置 | 內容 | 分級 |
-|---|---|---|---|
-| ~~2~~ | ~~`JiraIdentityLib.js:7`~~ | ~~程式碼註解寫「放在使用此 Library 的主專案的指令碼屬性」，跟同檔案 README 相反~~——**已修好**，改成跟 README 一致的說法 | ✅ |
-| ~~3~~ | ~~`notify-lib/testChatNotifier.js`~~ | ~~名為 test、實為會真的發送真實 Chat 訊息的診斷工具~~——**已評估決定不改**：跟 `testReminderNotifier()` 情境不同，`notify-lib` 是純 library 沒有其他排程入口跟它擠在同一個選單，讀的 `CHAT_DEVLOP_WEBHOOK_URL` 沒設定會優雅結束，不會誤打正式頻道，風險低 | ～ |
-| ~~4~~ | ~~`JiraIdentityLib.js:46`~~ | ~~`const User = Object.freeze({...})` 用 `const` 宣告，GAS library 不會匯出~~——**已評估決定不改**：查過使用範例，`User` 從設計上就只給類別內部用，從沒打算給外部直接存取，`const` 的模組作用域已經夠用，沒有需要開放出去 | ～ |
-| 5 | `infra-lib/SheetClient.js` | 整份 251 行、16 個方法全部零呼叫者 | 🟢 擱置（預先開發的 library API，不當死碼處理） |
-| 6 | `infra-lib/DriveClient.js` | 7 個方法零呼叫者 | 🟢 擱置（同上） |
-| 7 | `infra-lib/FormClient.js` | 13 個方法零呼叫者 | 🟢 擱置（同上） |
-| ~~8~~ | ~~`jira-identity-lib` 第 247-265 行~~ | ~~18 個頂層包裝函式零呼叫者~~——**已處理**：刪掉 16 個純重複的（`getJiraUrl`/`getAdmin`/`getOcean`~`getWilliam`/`status`），只留 `jiraIdentityLib()`（真正的進入點，後續在項目 11 改名為 `createJiraIdentityLib()`）跟 `printStatus()`（保留當手動診斷工具，跟 `printWebhookStatus()` 同一類） | ✅ |
-| 9 | `jira-identity-lib` | 9 個具名使用者 sugar method、`getEmail()`、`getToken()` 零呼叫者 | 🟢 擱置（是實例方法不是全域函式，沒有撞名風險；跟 `getAdminLead()` 同一類「固定身份」的合理便利寫法，只是目前沒有固定身份的情境用到，比照 `SheetClient` 處理） |
-| ~~10~~ | ~~`jira-identity-lib`、`notify-webhook-lib`~~ | ~~`status()` 方法名是名詞不是動詞~~——**已修好**，兩個檔案都改成 `getStatus()`，`printStatus()` 內部呼叫處同步更新 | ✅ |
-| ~~11~~ | ~~跨 library~~ | ~~工廠函式命名不一致（`create*` vs 小寫 class 名）~~——**已修好**：`jiraIdentityLib()` → `createJiraIdentityLib()`、`notifyWebhookLib()` → `createNotifyWebhookLib()`，兩個 library 的 README、呼叫端（`jira/worklog-migrate`、`jira/quarterly-tickets`）都同步更新 | ✅ |
-| ~~12~~ | ~~`SheetClient.js:175-183` `setValues()`~~ | ~~沒有防呆檢查空陣列，傳 `[]` 會拋出難懂的原生錯誤~~——**已修好**：改成主動檢查 `values` 是 `null`/`undefined`/空陣列時，拋出清楚的錯誤訊息（不是靜默不做事——底層 library 不該替呼叫端決定「沒資料是不是正常情況」，應該讓呼叫端自己決定要不要防範，library 負責把錯誤講清楚） | ✅ |
-| ~~13~~ | ~~`SheetClient.js:137-154` `getRow()`/`getColumn()`~~ | ~~工作表完全空的時候，會因為範圍高度/寬度是 0 而拋出原生錯誤~~——**已評估決定不改**：查證過（Google 官方社群討論串），`numRows`/`numCols` 傳 0 本來就是原生 API 會拋錯的行為；`getRow()`/`getColumn()` 沒有包任何額外判斷，行為已經跟原生 API 一致，這是底層 library 該有的樣子 | ～ |
-| ~~14~~ | ~~`SheetClient.js:31,34`~~ | ~~`this.spreadsheetId`、`this.spreadsheet` 是公開欄位沒加 `_` 前綴~~——**已修好**，改成 `this._spreadsheetId`、`this._spreadsheet`，類別內部所有用到的地方同步更新 | ✅ |
-
----
-
-## 四、從未審查過的專案（約 3700 行）
+## 三、從未審查過的專案（約 3700 行）
 
 | 專案 | 行數 |
 |---|---|
@@ -106,7 +84,7 @@ webhook 失效時流程照常走完，但**沒有人收到通知，也不會有�
 
 ---
 
-## 五、懸而未決的討論
+## 四、懸而未決的討論
 
 ### M. 建構子要不要改用 `this.options`
 
@@ -150,9 +128,8 @@ webhook 失效時流程照常走完，但**沒有人收到通知，也不會有�
 
 1. **G**（影響最廣，通知靜默失敗）
 2. **J → K**（部署設定，做完才能真的上線）
-3. **2 / 4 / 12 / 13**（三裡面分級較高的）
-4. **M / 其餘三的項目**（優先度較低）
-5. **四**（未審查的專案，建議一個一個過）
+3. **M**（優先度較低）
+4. **三**（未審查的專案，建議一個一個過）
 
 ## 怎麼跑測試
 
