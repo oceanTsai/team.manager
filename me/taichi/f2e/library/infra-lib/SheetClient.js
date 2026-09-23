@@ -173,6 +173,10 @@ class SheetClient {
    * @param {any[][]} values
    */
   setValues(sheetName, a1Notation, values) {
+    if (!values || values.length === 0) {
+      throw new Error('setValues() 的 values 不能是空陣列或 null/undefined');
+    }
+
     const sheet = this.getSheet(sheetName);
     const numRows = values.length;
     const numCols = values[0].length;
