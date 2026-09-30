@@ -190,20 +190,23 @@
 class WorklogMigrator {
 
   /**
-   * @param {Object} opts
-   * @param {Object} opts.jiraEnv         - JiraIdentityLib.createJiraIdentityLib() 取得的實例
-   * @param {Object} opts.userMapping     - { KEY: [...name aliases] }
-   * @param {number} [opts.maxRuntimeSeconds=330] - 執行時間上限(秒),預設 5.5 分鐘
-   * @param {number} [opts.sleepMs=300]   - 每筆處理後 sleep 毫秒數,避免 rate limit
+   * @param {Object} option
+   * @param {Object} option.jiraEnv         - JiraIdentityLib.createJiraIdentityLib() 取得的實例
+   * @param {Object} option.userMapping     - { KEY: [...name aliases] }
+   * @param {number} [option.maxRuntimeSeconds=330] - 執行時間上限(秒),預設 5.5 分鐘
+   * @param {number} [option.sleepMs=300]   - 每筆處理後 sleep 毫秒數,避免 rate limit
    */
-  constructor({ jiraEnv, userMapping, maxRuntimeSeconds = 330, sleepMs = 300 }) {
-    this.jira = jiraEnv;
-    this.userMapping = userMapping;
-    this.maxRuntime = maxRuntimeSeconds;
-    this.sleepMs = sleepMs;
-    this.startTime = new Date().getTime();
-    this.domain = jiraEnv.getJiraUrl();
-    this.adminHeaders = jiraEnv.getAdmin().authHeaders;
+  constructor(option) {
+    this._option = {
+      jiraEnv: option.jiraEnv,
+      userMapping: option.userMapping,
+      maxRuntimeSeconds: option.maxRuntimeSeconds !== undefined ? option.maxRuntimeSeconds : 330,
+      sleepMs: option.sleepMs !== undefined ? option.sleepMs : 300
+    };
+
+    this._startTime    = new Date().getTime();
+    this._domain       = option.jiraEnv.getJiraUrl();
+    this._adminHeaders = option.jiraEnv.getAdmin().authHeaders;
   }
 
   // ------------------------------------------------------------------------
@@ -246,7 +249,7 @@ class WorklogMigrator {
 
       const wl = pending[i];
       const authorName = wl.author.displayName;
-      const remaining = (this.maxRuntime - this._elapsedSeconds()).toFixed(0);
+      const remaining = (this._option.maxRuntimeSeconds - this._elapsedSeconds()).toFixed(0);
       Logger.log(`\n--- 第 ${i + 1}/${pending.length} 筆 (剩 ${remaining}s) ---`);
       Logger.log(`作者: ${authorName} | 時間: ${wl.started} | 工時: ${wl.timeSpent} | ID: ${wl.id}`);
 
@@ -262,7 +265,7 @@ class WorklogMigrator {
       // 從 JiraIdentityLib 取 user 認證
       let userHeaders;
       try {
-        userHeaders = this.jira.getUser(userKey).authHeaders;
+        userHeaders = this._option.jiraEnv.getUser(userKey).authHeaders;
       } catch (e) {
         Logger.log(`✗ ${userKey} 沒有設定 email 或 token,跳過`);
         skipped++;
@@ -281,7 +284,7 @@ class WorklogMigrator {
         Logger.log(`✗ 處理失敗: ${e.message}`);
         failed++;
       }
-      Utilities.sleep(this.sleepMs);
+      Utilities.sleep(this._option.sleepMs);
     }
 
     Logger.log(`\n[${source} -> ${target}]${labelText} 本次:成功 ${success} / 失敗 ${failed} / 跳過 ${skipped}`);
@@ -334,7 +337,7 @@ class WorklogMigrator {
    * @private
    */
   _elapsedSeconds() {
-    return (new Date().getTime() - this.startTime) / 1000;
+    return (new Date().getTime() - this._startTime) / 1000;
   }
 
   /**
@@ -342,7 +345,7 @@ class WorklogMigrator {
    * @private
    */
   _isTimeUp() {
-    return this._elapsedSeconds() > this.maxRuntime;
+    return this._elapsedSeconds() > this._option.maxRuntimeSeconds;
   }
 
   /**
@@ -353,8 +356,8 @@ class WorklogMigrator {
   _findUserKey(authorDisplayName) {
     if (!authorDisplayName) return null;
     const target = authorDisplayName.toLowerCase().trim();
-    for (const key of Object.keys(this.userMapping)) {
-      const names = this.userMapping[key];
+    for (const key of Object.keys(this._option.userMapping)) {
+      const names = this._option.userMapping[key];
       for (const n of names) {
         const candidate = n.toLowerCase().trim();
         if (candidate === target) return key;
@@ -374,9 +377,9 @@ class WorklogMigrator {
     let startAt = 0;
     const maxResults = 100;
     while (true) {
-      const url = `${this.domain}/rest/api/3/issue/${issueKey}/worklog?startAt=${startAt}&maxResults=${maxResults}`;
+      const url = `${this._domain}/rest/api/3/issue/${issueKey}/worklog?startAt=${startAt}&maxResults=${maxResults}`;
       const response = UrlFetchApp.fetch(url, {
-        method: 'get', headers: this.adminHeaders, muteHttpExceptions: true
+        method: 'get', headers: this._adminHeaders, muteHttpExceptions: true
       });
       if (response.getResponseCode() !== 200) {
         throw new Error(`取得 worklog 失敗 (${issueKey}): ${response.getResponseCode()}`);
@@ -394,7 +397,7 @@ class WorklogMigrator {
    * @private
    */
   _addWorklog(targetIssue, originalWorklog, headers) {
-    const url = `${this.domain}/rest/api/3/issue/${targetIssue}/worklog?notifyUsers=false`;
+    const url = `${this._domain}/rest/api/3/issue/${targetIssue}/worklog?notifyUsers=false`;
     const originalComment = this._extractCommentText(originalWorklog.comment);
     const payload = {
       timeSpentSeconds: originalWorklog.timeSpentSeconds,
@@ -421,7 +424,7 @@ class WorklogMigrator {
    * @private
    */
   _deleteWorklog(sourceIssue, worklogId, headers) {
-    const url = `${this.domain}/rest/api/3/issue/${sourceIssue}/worklog/${worklogId}?notifyUsers=false&adjustEstimate=leave`;
+    const url = `${this._domain}/rest/api/3/issue/${sourceIssue}/worklog/${worklogId}?notifyUsers=false&adjustEstimate=leave`;
     const response = UrlFetchApp.fetch(url, {
       method: 'delete', headers: headers, muteHttpExceptions: true
     });

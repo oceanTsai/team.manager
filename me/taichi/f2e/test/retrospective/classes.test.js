@@ -59,7 +59,12 @@ console.log('\n【SprintFolderBuilder】可重複執行:已存在就沿用/跳�
 const tree = { folders:{ROOT:['2026','template'],'ROOT/2026':[]},
                files:{'ROOT/template':[{name:'表單樣板',mime:'mime/form'},{name:'投影片樣板',mime:'mime/slide'}]} };
 drive = H.fakeDrive(tree);
-const builder = new SprintFolderBuilder(drive, H.fakeFormClient(), 'ROOT', 'ROOT/template');
+const builder = new SprintFolderBuilder({
+  drive: drive,
+  formClient: H.fakeFormClient(),
+  sprintRootFolderId: 'ROOT',
+  templateFolderId: 'ROOT/template'
+});
 let built = builder.build(2026, '0622-0703');
 check('第一次:資料夾是新建的', built.created.folder, true);
 check('第一次:表單是新建的', built.created.form, true);

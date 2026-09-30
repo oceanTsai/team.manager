@@ -51,12 +51,12 @@ class RetroPreparer {
     this._options  = options;
     this._finder   = new SprintFinder(drive, options.sprintRootFolderId);
     this._planner  = new SprintPlanner(options.sprintDays);
-    this._builder  = new SprintFolderBuilder(
-      drive,
-      Infra.createFormClient(),
-      options.sprintRootFolderId,
-      options.templateFolderId
-    );
+    this._builder  = new SprintFolderBuilder({
+      drive: drive,
+      formClient: Infra.createFormClient(),
+      sprintRootFolderId: options.sprintRootFolderId,
+      templateFolderId: options.templateFolderId
+    });
     this._triggers = new TriggerManager();
   }
 

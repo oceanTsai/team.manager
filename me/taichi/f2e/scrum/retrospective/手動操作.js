@@ -79,12 +79,12 @@ function createSprintFolder() {
   const drive   = Infra.createDriveClient();
   const finder  = new SprintFinder(drive, SPRINT_OPTIONS.sprintRootFolderId);
   const planner = new SprintPlanner(SPRINT_OPTIONS.sprintDays);
-  const builder = new SprintFolderBuilder(
-    drive,
-    Infra.createFormClient(),
-    SPRINT_OPTIONS.sprintRootFolderId,
-    SPRINT_OPTIONS.templateFolderId
-  );
+  const builder = new SprintFolderBuilder({
+    drive: drive,
+    formClient: Infra.createFormClient(),
+    sprintRootFolderId: SPRINT_OPTIONS.sprintRootFolderId,
+    templateFolderId: SPRINT_OPTIONS.templateFolderId
+  });
 
   const spec = _resolveSprintSpec(finder, planner);
   Logger.log(`📆 準備建立:${spec.name}(${spec.year} 年度資料夾)`);
@@ -318,12 +318,12 @@ function showRecentSprints() {
  * @returns {boolean} 全部通過才回傳 true
  */
 function checkRetroSetup() {
-  return new SprintFolderBuilder(
-    Infra.createDriveClient(),
-    Infra.createFormClient(),
-    SPRINT_OPTIONS.sprintRootFolderId,
-    SPRINT_OPTIONS.templateFolderId
-  ).validateSetup();
+  return new SprintFolderBuilder({
+    drive: Infra.createDriveClient(),
+    formClient: Infra.createFormClient(),
+    sprintRootFolderId: SPRINT_OPTIONS.sprintRootFolderId,
+    templateFolderId: SPRINT_OPTIONS.templateFolderId
+  }).validateSetup();
 }
 
 

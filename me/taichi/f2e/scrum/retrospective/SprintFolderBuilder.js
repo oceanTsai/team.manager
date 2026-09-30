@@ -21,16 +21,19 @@
 class SprintFolderBuilder {
 
   /**
-   * @param {Object} drive - Infra.createDriveClient() 建立的 client
-   * @param {Object} formClient - Infra.createFormClient() 建立的 client
-   * @param {string} sprintRootFolderId - scrum 根資料夾 ID
-   * @param {string} templateFolderId - 樣板資料夾 ID
+   * @param {Object} option
+   * @param {Object} option.drive - Infra.createDriveClient() 建立的 client
+   * @param {Object} option.formClient - Infra.createFormClient() 建立的 client
+   * @param {string} option.sprintRootFolderId - scrum 根資料夾 ID
+   * @param {string} option.templateFolderId - 樣板資料夾 ID
    */
-  constructor(drive, formClient, sprintRootFolderId, templateFolderId) {
-    this._drive      = drive;
-    this._form       = formClient;
-    this._rootId     = sprintRootFolderId;
-    this._templateId = templateFolderId;
+  constructor(option) {
+    this._option = {
+      drive: option.drive,
+      formClient: option.formClient,
+      sprintRootFolderId: option.sprintRootFolderId,
+      templateFolderId: option.templateFolderId
+    };
   }
 
 
@@ -80,14 +83,14 @@ class SprintFolderBuilder {
     Logger.log('🔍 檢查建立設定...');
 
     try {
-      Logger.log(`✅ scrum 根資料夾:${this._drive.getFolder(this._rootId).getName()}`);
+      Logger.log(`✅ scrum 根資料夾:${this._option.drive.getFolder(this._option.sprintRootFolderId).getName()}`);
     } catch (error) {
       Logger.log(`❌ 根資料夾錯誤:${error.message}`);
       passed = false;
     }
 
     try {
-      Logger.log(`✅ 樣板資料夾:${this._drive.getFolder(this._templateId).getName()}`);
+      Logger.log(`✅ 樣板資料夾:${this._option.drive.getFolder(this._option.templateFolderId).getName()}`);
       const templates = this._loadTemplates();
       Logger.log(`   ✅ 表單範本:${templates.form.getName()}`);
       Logger.log(`   ✅ 投影片範本:${templates.slide.getName()}`);
@@ -110,11 +113,11 @@ class SprintFolderBuilder {
    */
   _resolveYearFolder(year) {
     const yearStr = String(year);
-    let   folder  = this._drive.findFolderByName(this._rootId, yearStr);
+    let   folder  = this._option.drive.findFolderByName(this._option.sprintRootFolderId, yearStr);
 
     if (!folder) {
       Logger.log(`📁 ${yearStr} 年度資料夾不存在,自動建立`);
-      folder = this._drive.createFolder(this._rootId, yearStr);
+      folder = this._option.drive.createFolder(this._option.sprintRootFolderId, yearStr);
     }
 
     return folder.getId();
@@ -126,13 +129,13 @@ class SprintFolderBuilder {
    * @returns {{item: GoogleAppsScript.Drive.Folder, created: boolean}}
    */
   _ensureFolder(yearFolderId, sprintName) {
-    let folder  = this._drive.findFolderByName(yearFolderId, sprintName);
+    let folder  = this._option.drive.findFolderByName(yearFolderId, sprintName);
     let created = false;
 
     if (folder) {
       Logger.log(`📁 資料夾已存在,沿用:${sprintName}`);
     } else {
-      folder  = this._drive.createFolder(yearFolderId, sprintName);
+      folder  = this._option.drive.createFolder(yearFolderId, sprintName);
       created = true;
       Logger.log(`📁 已建立資料夾:${folder.getUrl()}`);
     }
@@ -146,14 +149,14 @@ class SprintFolderBuilder {
    * @returns {{item: GoogleAppsScript.Drive.File, created: boolean}}
    */
   _ensureForm(folderId, sprintName, template) {
-    let file    = this._drive.findFileByName(folderId, sprintName);
+    let file    = this._option.drive.findFileByName(folderId, sprintName);
     let created = false;
 
     if (file) {
       Logger.log(`📝 表單已存在,跳過複製:${file.getName()}`);
     } else {
-      file = this._drive.copyFile(template.getId(), sprintName, folderId);
-      this._form.setTitle(file.getId(), sprintName);
+      file = this._option.drive.copyFile(template.getId(), sprintName, folderId);
+      this._option.formClient.setTitle(file.getId(), sprintName);
       created = true;
       Logger.log(`📝 已複製表單並更新標題:${file.getUrl()}`);
     }
@@ -168,13 +171,13 @@ class SprintFolderBuilder {
    */
   _ensureSlide(folderId, sprintName, template) {
     const slideName = `${sprintName}回顧`;
-    let   file      = this._drive.findFileByName(folderId, slideName);
+    let   file      = this._option.drive.findFileByName(folderId, slideName);
     let   created   = false;
 
     if (file) {
       Logger.log(`📊 投影片已存在,跳過複製:${file.getName()}`);
     } else {
-      file    = this._drive.copyFile(template.getId(), slideName, folderId);
+      file    = this._option.drive.copyFile(template.getId(), slideName, folderId);
       created = true;
       Logger.log(`📊 已複製投影片:${file.getUrl()}`);
     }
@@ -189,7 +192,7 @@ class SprintFolderBuilder {
    */
   _loadTemplates() {
     const mime  = Infra.DriveMime;
-    const files = this._drive.listFiles(this._templateId);
+    const files = this._option.drive.listFiles(this._option.templateFolderId);
     let   form  = null;
     let   slide = null;
 

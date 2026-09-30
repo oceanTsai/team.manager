@@ -119,7 +119,7 @@ function _createInstance() {
   const messageTemplate = webhookUrl ? new TicketCreationTemplate() : null;
 
   return new QuarterlyTicketCreator({
-    jiraEnv: jiraEnv,
+    domain: jiraEnv.getJiraUrl(),
     config: QUARTERLY_CONFIG,
     notifier: notifier,
     messageTemplate: messageTemplate,

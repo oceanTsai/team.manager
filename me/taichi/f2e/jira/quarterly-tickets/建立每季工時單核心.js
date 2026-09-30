@@ -21,7 +21,7 @@
 // 【API 概覽】
 // ==========================================================================
 //
-//   new QuarterlyTicketCreator({ jiraEnv, config, notifier?, messageTemplate? })
+//   new QuarterlyTicketCreator({ domain, config, headers, notifier?, messageTemplate? })
 //
 //   creator.createForQuarter(quarterTag, mode?)  ← 建立指定季度的會議單
 //   creator.getCurrentQuarterTag()               ← 取得「現在這一季」的 tag
@@ -32,7 +32,7 @@
 // 【建構子參數】
 // ==========================================================================
 //
-//   jiraEnv     {Object}  必填  從 JiraIdentityLib.createJiraIdentityLib() 取得的實例
+//   domain      {string}  必填  Jira 網域,例如 jiraEnv.getJiraUrl()
 //   config      {Object}  必填  會議單設定:
 //                                {
 //                                  parentEpic: 'VIPOP-110',
@@ -40,6 +40,7 @@
 //                                  issueType:  'Task',
 //                                  titles: ['標題1', '標題2']
 //                                }
+//   headers     {Object}  必填  開單用的 auth headers,由外部決定用哪個帳號
 //   notifier    {Object}  選填  NotifyLib 建立的 notifier 實例
 //                                沒提供就不會發通知(只 log)
 //   messageTemplate {Object}  選填  MessageTemplate 子類實例,用來渲染通知
@@ -51,21 +52,21 @@
 class QuarterlyTicketCreator {
 
   /**
-   * @param {Object} opts
-   * @param {Object} opts.jiraEnv    - JiraIdentityLib.createJiraIdentityLib() 取得的實例
-   * @param {Object} opts.config     - 會議單設定 { parentEpic, projectKey, issueType, titles }
-   * @param {Object} opts.headers    - 開單用的 auth headers(必填),由外部決定用哪個帳號
-   * @param {Object} [opts.notifier] - 通知器(NotifyLib 提供),沒提供就不發通知
-   * @param {Object} [opts.messageTemplate] - 訊息樣板,沒提供就不發通知
+   * @param {Object} option
+   * @param {string} option.domain    - Jira 網域,例如 jiraEnv.getJiraUrl()
+   * @param {Object} option.config    - 會議單設定 { parentEpic, projectKey, issueType, titles }
+   * @param {Object} option.headers   - 開單用的 auth headers(必填),由外部決定用哪個帳號
+   * @param {Object} [option.notifier] - 通知器(NotifyLib 提供),沒提供就不發通知
+   * @param {Object} [option.messageTemplate] - 訊息樣板,沒提供就不發通知
    */
-  constructor({ jiraEnv, config, notifier, messageTemplate, headers }) {
-    this.jira = jiraEnv;
-    this.config = config;
-    this.notifier = notifier || null;
-    this.messageTemplate = messageTemplate || null;
-    this.domain = jiraEnv.getJiraUrl();
-    // headers 由外部傳入,決定用哪個帳號開單(必填)
-    this.headers = headers;
+  constructor(option) {
+    this._option = {
+      domain: option.domain,
+      config: option.config,
+      notifier: option.notifier || null,
+      messageTemplate: option.messageTemplate || null,
+      headers: option.headers
+    };
   }
 
   // ------------------------------------------------------------------------
@@ -90,7 +91,7 @@ class QuarterlyTicketCreator {
     }
 
     // 步驟 2:撈出父單底下所有子單的 summary 用於查重
-    Logger.log(`\n--- 撈取 ${this.config.parentEpic} 底下所有子單以檢查重複 ---`);
+    Logger.log(`\n--- 撈取 ${this._option.config.parentEpic} 底下所有子單以檢查重複 ---`);
     let existingTitles;
     try {
       existingTitles = this._getExistingChildTitles();
@@ -103,7 +104,7 @@ class QuarterlyTicketCreator {
     }
 
     // 步驟 3:逐一建立會議單
-    this.config.titles.forEach((titlePrefix, index) => {
+    this._option.config.titles.forEach((titlePrefix, index) => {
       const fullTitle = `${titlePrefix} (${quarterTag})`;
       Logger.log(`\n--- 第 ${index + 1} 張: ${fullTitle} ---`);
 
@@ -115,7 +116,7 @@ class QuarterlyTicketCreator {
 
       try {
         const issueKey = this._createTicket(fullTitle);
-        const link = `${this.domain}/browse/${issueKey}`;
+        const link = `${this._option.domain}/browse/${issueKey}`;
         Logger.log(`✓ 建立成功: ${issueKey}`);
         Logger.log(`  連結: ${link}`);
         results.push({ status: 'success', title: fullTitle, issueKey, link });
@@ -160,10 +161,10 @@ class QuarterlyTicketCreator {
    * @return {{accountId, displayName, emailAddress}}
    */
   fetchMyself() {
-    const url = `${this.domain}/rest/api/3/myself`;
+    const url = `${this._option.domain}/rest/api/3/myself`;
     const response = UrlFetchApp.fetch(url, {
       method: 'get',
-      headers: this.headers,
+      headers: this._option.headers,
       muteHttpExceptions: true
     });
 
@@ -184,21 +185,21 @@ class QuarterlyTicketCreator {
    * @private
    */
   _notify(quarterTag, mode, results) {
-    if (!this.notifier || !this.messageTemplate) {
+    if (!this._option.notifier || !this._option.messageTemplate) {
       Logger.log('⚠ 未注入 notifier 或 messageTemplate,略過通知');
       return;
     }
 
     try {
-      const message = this.messageTemplate.render({
+      const message = this._option.messageTemplate.render({
         quarterTag: quarterTag,
         mode: mode,
-        jiraDomain: this.domain,
-        parentEpic: this.config.parentEpic,
+        jiraDomain: this._option.domain,
+        parentEpic: this._option.config.parentEpic,
         results: results
       });
 
-      const ok = this.notifier.sendCard(message);
+      const ok = this._option.notifier.sendCard(message);
       if (ok) {
         Logger.log('✓ 通知已發送');
       } else {
@@ -217,17 +218,17 @@ class QuarterlyTicketCreator {
   _getExistingChildTitles() {
     const titles = new Set();
     let nextPageToken = null;
-    const jql = `parent = ${this.config.parentEpic}`;
+    const jql = `parent = ${this._option.config.parentEpic}`;
 
     while (true) {
-      let url = `${this.domain}/rest/api/3/search/jql?jql=${encodeURIComponent(jql)}&fields=summary&maxResults=100`;
+      let url = `${this._option.domain}/rest/api/3/search/jql?jql=${encodeURIComponent(jql)}&fields=summary&maxResults=100`;
       if (nextPageToken) {
         url += `&nextPageToken=${encodeURIComponent(nextPageToken)}`;
       }
 
       const response = UrlFetchApp.fetch(url, {
         method: 'get',
-        headers: this.headers,
+        headers: this._option.headers,
         muteHttpExceptions: true
       });
 
@@ -256,19 +257,19 @@ class QuarterlyTicketCreator {
    * @return {string} 建立成功後的工單編號
    */
   _createTicket(title) {
-    const url = `${this.domain}/rest/api/3/issue`;
+    const url = `${this._option.domain}/rest/api/3/issue`;
     const payload = {
       fields: {
-        project: { key: this.config.projectKey },
+        project: { key: this._option.config.projectKey },
         summary: title,
-        issuetype: { name: this.config.issueType },
-        parent: { key: this.config.parentEpic }
+        issuetype: { name: this._option.config.issueType },
+        parent: { key: this._option.config.parentEpic }
       }
     };
 
     const response = UrlFetchApp.fetch(url, {
       method: 'post',
-      headers: this.headers,
+      headers: this._option.headers,
       payload: JSON.stringify(payload),
       muteHttpExceptions: true
     });

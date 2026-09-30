@@ -1,7 +1,7 @@
 # 待處理清單
 
 > 這份文件是**自足的**——新開一個對話直接讀這裡就能接手，不需要先前的對話記錄。
-> 最後更新：2026-09-23
+> 最後更新：2026-09-30
 >
 > **範圍**：只列 `me/` 底下的任務。repo 根目錄的舊資料夾（`bugAssignment/`、`envLib/`、`infraLib/`、`jiraLogMigrate/`、`notifyLib/`、`report/`）屬於另一個 Google 空間、線上還在跑，不在這次重構範圍內，不列入。
 
@@ -13,6 +13,7 @@
 - `scrum/retrospective` 已完成重構：拆成單一職責的類別、依賴由建構子注入
 - `node me/taichi/f2e/test/run.js` 全部通過，共 99 個檢查（4 組，含新加的 `test/retrospective/prepareRetro.test.js`，覆蓋 B 的過期檢查與 A 的查詢次數）
 - **尚未部署**——`me/` 底下沒有任何 `.clasp.json`
+- M 項目（建構子欄位存放方式）已定案並處理完：`SprintFolderBuilder`、`QuarterlyTicketCreator`、`WorklogMigrator` 這 3 個建構子參數超過 3 個的類別，統一改成 `constructor(option) { this._option = {...} }`（逐欄位明寫，不用展開語法）；順便發現並修掉 `QuarterlyTicketCreator` 的 `jiraEnv` 是死欄位（只用到 `getJiraUrl()`），改成呼叫端直接傳 `domain` 字串進來，不用整個 `jiraEnv` 服務物件。`WorklogMigrator` 的 `jiraEnv` 因為有動態呼叫 `getUser()`，維持整包注入。詳細討論記錄見下方「已定案的設計決策」第 10 條
 
 ---
 
@@ -84,22 +85,6 @@ webhook 失效時流程照常走完，但**沒有人收到通知，也不會有�
 
 ---
 
-## 四、懸而未決的討論
-
-### M. 建構子要不要改用 `this.options`
-
-先前討論過但沒結論。整包 repo 目前有三種風格：
-
-| 類別 | 寫法 |
-|---|---|
-| `SprintFolderBuilder` 等 | 攤平成獨立欄位 |
-| `QuarterlyTicketCreator` | `this.config = config`（整包存） |
-| `WorklogMigrator` | 解構參數帶預設值 |
-
-若要統一成 `this.options`，注意 **GAS 沒有物件展開 `{...x}` 的前例**（封存版程式碼中沒有用過），建議用明確列欄位的寫法。
-
----
-
 ## 已定案的設計決策（不要重新討論）
 
 這些是先前討論後定案的，記錄原因避免重複來回：
@@ -122,14 +107,15 @@ webhook 失效時流程照常走完，但**沒有人收到通知，也不會有�
 
 9. **`SprintFinder`/`SprintFolderBuilder` 不用把 `Infra.DriveMime` 改成建構子注入。** `Infra` 本身在 GAS 就是掛載的 library，呼叫端本來就是用 `Infra.xxx` 這種全域方式在用；`DriveMime` 只是常數不是服務，注入它換不到測試或耦合上的實際好處。已經試著改過一輪（牽動 5 個檔案 11 個呼叫點）又復原，維持現狀。
 
+10. **建構子參數超過 3 個才需要統一存放方式，統一成 `constructor(option) { this._option = {...} }`。** 判斷標準：只有本身是完整值物件的參數（像 `config`）整包存才合理；性質不同的依賴各自攤平存，才看得出這個 class 依賴什麼。這次判斷下來，`QuarterlyTicketCreator`/`WorklogMigrator` 的建構子參數沒有一個符合「全域使用、不用注入」的條件（即使來自掛載的 library，工廠函式生出來的服務物件還是要注入，跟 `Infra.DriveMime` 這種純常數不同），所以全部維持注入，只是改成上述的存放方式。順便發現 `QuarterlyTicketCreator` 的 `jiraEnv` 欄位從沒被讀取過（只用到 `getJiraUrl()`），已改成呼叫端直接傳 `domain` 字串進來。GAS 沒有 `#field` 真正私有欄位的支援（會 parsing error），私有靠 `_` 前綴命名慣例即可，不用額外做 getter/setter。3 個參數以下（`SprintForm`、`SprintFinder`、`FailureNotifier` 等）不用處理。
+
 ---
 
 ## 建議的處理順序
 
 1. **G**（影響最廣，通知靜默失敗）
 2. **J → K**（部署設定，做完才能真的上線）
-3. **M**（優先度較低）
-4. **三**（未審查的專案，建議一個一個過）
+3. **三**（未審查的專案，建議一個一個過）
 
 ## 怎麼跑測試
 
