@@ -30,7 +30,7 @@ function prepareRetro(e) {          // 環境要求的入口，只轉呼叫
 | class | 名詞或形容詞，大駝峰 | `SprintPlanner` `DateFormat` | `PlanSprint` `Utils` |
 | 方法 | **動詞開頭** | `findLatest` `calcPublishDate` `renderCard` | `latestSprint` `publishDateFor` `card` |
 | 私有 | 前綴 `_`，且**只有**私有加 | `_loadTemplates` `this._drive` | `loadTemplates`（私有卻沒標） |
-| 公開欄位 | 不存在。所有實例欄位一律 `this._x` | `this._options` | `this.options` |
+| 公開欄位 | 不存在。所有實例欄位一律 `this._x` | `this._foo` | `this.foo` |
 
 「事件名」不是動詞：`sprintCreated` → `renderSprintCreated`。
 
