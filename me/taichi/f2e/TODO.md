@@ -14,6 +14,7 @@
 - `node me/taichi/f2e/test/run.js` 全部通過，共 99 個檢查（4 組，含新加的 `test/retrospective/prepareRetro.test.js`，覆蓋 B 的過期檢查與 A 的查詢次數）
 - **尚未部署**——`me/` 底下沒有任何 `.clasp.json`
 - G 項目（通知失敗處理）已盤查並修好唯一的真正 bug（`FailureNotifier` 安全網本身失敗時謊報成功），其餘延伸想法列成 4 個 ISSUE 延後處理（見下方一、G 段落）
+- 5 個未審查專案（`bug-triage`／`jira/worklog-migrate`／`jira/quarterly-tickets`／`library/infra-lib`／`library/notify-lib`，共約 3700 行）已於 2026-09-30 全部複查完畢，共 24 項確認缺陷列成 ISSUE2（見下方三），延後到 `scrum/retrospective` 部署到 GAS 能運作後再處理；其中 `jira/worklog-migrate` 有 2 項是實際的資料正確性/可用性風險，`bug-triage` 整專案沒有 class 是規模較大的結構性問題，其餘多是「guard clause 違反單一出口」的風格類問題
 - M 項目（建構子欄位存放方式）已定案並處理完：`SprintFolderBuilder`、`QuarterlyTicketCreator`、`WorklogMigrator` 這 3 個建構子參數超過 3 個的類別，統一改成 `constructor(option) { this._option = {...} }`（逐欄位明寫，不用展開語法）；順便發現並修掉 `QuarterlyTicketCreator` 的 `jiraEnv` 是死欄位（只用到 `getJiraUrl()`），改成呼叫端直接傳 `domain` 字串進來，不用整個 `jiraEnv` 服務物件。`WorklogMigrator` 的 `jiraEnv` 因為有動態呼叫 `getUser()`，維持整包注入。詳細討論記錄見下方「已定案的設計決策」第 10 條
 
 ---
@@ -77,17 +78,58 @@
 
 ---
 
-## 三、從未審查過的專案（約 3700 行）
+## 三、未審查專案複查發現（ISSUE2 —— 延後處理）
 
-| 專案 | 行數 |
-|---|---|
-| `bug-triage` | 1125 |
-| `library/infra-lib` | 862 |
-| `jira/worklog-migrate` | 677 |
-| `jira/quarterly-tickets` | 548 |
-| `library/notify-lib` | 467 |
+5 個資料夾（約 3700 行）已於 2026-09-30 全部複查完畢，純讀取分析，未修改任何檔案。**這些發現先不處理，等 `scrum/retrospective` 部署到 GAS 且能實際運作後再回頭補**，以下只列「確認是缺陷」的項目，評估後判斷沒問題或屬於預留 API 的項目不列出（已個別確認過，不是遺漏）。
 
-只有 `scrum/retrospective`（1329 行）和舊的 `envLib` 做過完整審查。以 retrospective 找出 12 個問題的密度推估，**這 3700 行裡很可能還有一批未發現的問題**——這是推估，不是實測。
+### `jira/worklog-migrate`（680 行）—— 2 個風險最高，優先看
+
+| 編號 | 位置 | 內容 |
+|---|---|---|
+| 1 | `MigrateWorklogs.js:265-286`（`migrate()`） | **資料正確性風險**：worklog 新增到目標單成功後，若接著從來源刪除失敗，這筆會同時留在來源與目標兩邊，且沒有任何記錄可追蹤是哪一筆。模組靠「刪除來源」防止重複的假設在此被打破，重跑只會持續疊加重複工時 |
+| 2 | `migrateSorklogEntry.js:105-133`（`runTasks()`） | **可用性風險**：沒有包 try/catch，一筆格式正確但實際不存在/無權限的工單會讓整批任務（`QUARTER_TASKS`/`ANNUAL_TASKS`）全部卡死在那一筆，後面任務都不會執行，連進度總結 log 都不會印 |
+| 3 | `MigrateWorklogs.js:356-369`（`_findUserKey()`） | 單一出口違規：guard clause + 迴圈內 3 處 `return` |
+| 4 | `MigrateWorklogs.js:440-453`（`_extractCommentText()`） | 單一出口違規：3 個 `return` 分散各處 |
+| 5 | `MigrateWorklogs.js:459-466`（`_logSkippedDetails()`） | 單一出口違規：guard clause |
+| 6 | `migrateSorklogEntry.js:154-165`（`_validateTask()`） | 單一出口違規：guard-clause 鏈 |
+| 7 | `migrateSorklogEntry.js:177-186`（`_isValidIssueKey()`） | 單一出口違規：guard-clause 鏈 |
+| 8 | `migrateSorklogEntry.js:192-205`（`_formatTaskLabel()`） | 單一出口違規：`if...return` 三路分派，非 `switch` |
+| 9 | `MigrateWorklogs.js:339`（`_elapsedSeconds()`） | 命名不符「方法動詞開頭」，應類似 `calcElapsedSeconds()` |
+| 10 | `migrateSorklogEntry.js`（檔名） | 檔名錯字：`Sorklog` 應為 `Worklog` |
+
+### `bug-triage`（1125 行）—— 規模不同，是否重寫要先討論
+
+| 編號 | 位置 | 內容 |
+|---|---|---|
+| 1 | 全檔（`BugTriageAssignment.js`/`ScheduleTask.js`/`Test.js`） | **整個專案沒有任何 class**，全部是操作 Drive/PropertiesService/外部 API 的頂層全域函式，違反「每個檔案一個 class」。修正規模等同整專案重寫（類似當初 `scrum/retrospective` 的拆解工程量），不是局部修補 |
+| 2 | `BugTriageAssignment.js:259-361`（`doPost()`） | 單一函式做 token 驗證、tag 比對、Jira 解析、找試算表、AI 分析、挑派工、寫入、組回應共 8 步，與項目 1 同根因 |
+| 3 | `BugTriageAssignment.js:358-360` | `catch` 只回傳錯誤訊息給呼叫端，沒有任何 `Logger.log()`，GAS 執行紀錄裡沒有主動留下的痕跡 |
+| 4 | `BugTriageAssignment.js:452-453` | JSDoc 註解「D 欄：領域」與程式碼實際讀取的 `row[4]`（E 欄）前後矛盾，文件錯字會誤導維護欄位的人 |
+| 5 | `BugTriageAssignment.js`（`WEIGHTS` 等）、`config.js`（`CONFIG_*`） | 全部是扁平頂層 `const`，沒有命名空間包裝，與項目 1 同根因 |
+| 6 | `BugTriageAssignment.js:602-604` | 圖片下載失敗 `catch (_) {}` 靜默吞掉，沒有 log（影響輕微，建議補但不強制） |
+
+### `jira/quarterly-tickets`（549 行）
+
+| 編號 | 位置 | 內容 |
+|---|---|---|
+| 1 | `每季工時訊息通知樣板.js:71-75`（`_headerEmoji()`） | 單一出口違規：guard-clause 連續 `if...return` |
+| 2 | `每季工時訊息通知樣板.js:110-124`（`_buildResultField()`） | 對固定的 4 種 `status` 用 `if...return` 分派，建議改成物件字面量查表 |
+| 3 | `建立每季記工時單的主程序.js:63-66`（`quarterlyMeetingTicketCreator()`） | 單一出口違規：guard clause |
+| 4 | `建立每季記工時單的主程序.js:94-98`（`manualCreateSpecificQuarter()`） | 單一出口違規：guard clause |
+
+### `library/infra-lib`（866 行）
+
+| 編號 | 位置 | 內容 |
+|---|---|---|
+| 1 | `FormClient.js:199-205`（`getLinkedSheetId()`） | `catch` 範圍過寬，不管是「本來沒連結」還是「存取失敗/權限問題」全部吞成同一個 `null`，跟本資料夾 README 自訂原則「失敗即拋例外」矛盾。目前零外部呼叫，暫不會踩到，但一有人開始用就會踩坑 |
+| 2 | `SheetClient.js:213-218`（`appendRows()`） | 單一出口違規：guard clause |
+
+### `library/notify-lib`（467 行）
+
+| 編號 | 位置 | 內容 |
+|---|---|---|
+| 1 | `Notifier.js:82-87`（`_post()`） | 單一出口違規：guard clause |
+| 2 | `testChatNotifier.js:5-37` | 名為「test」的全域函式，實際會真的發送 2 則訊息到 Chat webhook，跟已移除的 `testReminderNotifier()` 是同一種風險（出現在 GAS 函式選單，手滑就真的發送） |
 
 ---
 
@@ -120,8 +162,9 @@
 ## 建議的處理順序
 
 1. **J → K**（部署設定，做完才能真的上線）
-2. **三**（未審查的專案，建議一個一個過）
-3. G 段落的 4 個 ISSUE（延後到 J/K 完成、程式能實際運作後再處理）
+2. `scrum/retrospective` 部署到 GAS 並確認能實際運作
+3. **三 的 ISSUE2**（未審查專案複查發現，24 項，建議先看 `jira/worklog-migrate` 的 2 個風險）
+4. G 段落的 4 個 ISSUE
 
 ## 怎麼跑測試
 
