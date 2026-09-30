@@ -109,20 +109,20 @@ function manualCreateSpecificQuarter() {
 // 集中組裝相依物件:
 //   - jiraEnv  從 JiraIdentityLib 拿
 //   - notifier 從 Notify 用 webhook URL 建立(沒設 webhook 就傳 null)
-//   - template 在主專案 new 出來
+//   - messageTemplate 在主專案 new 出來
 // ==========================================================================
 function _createInstance() {
   const jiraEnv = JiraIdentityLib.createJiraIdentityLib();
 
   const webhookUrl = NotifyWebhookLib.createNotifyWebhookLib().getJiraMessageWebhookUrl();
   const notifier = webhookUrl ? Notify.createChatNotifier(webhookUrl) : null;
-  const template = webhookUrl ? new TicketCreationTemplate() : null;
+  const messageTemplate = webhookUrl ? new TicketCreationTemplate() : null;
 
   return new QuarterlyTicketCreator({
     jiraEnv: jiraEnv,
     config: QUARTERLY_CONFIG,
     notifier: notifier,
-    template: template,
+    messageTemplate: messageTemplate,
     headers: jiraEnv.getAdminLead().authHeaders  // 用課長(Ocean)的帳號開單
   });
 }

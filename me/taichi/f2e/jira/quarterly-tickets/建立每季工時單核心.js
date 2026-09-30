@@ -4,13 +4,13 @@
 //
 // 【模組用途】
 //   在指定 Epic 底下,為某季度建立預定義的會議紀錄單。
-//   建立完透過注入的 notifier + template 發送結果通知。
+//   建立完透過注入的 notifier + messageTemplate 發送結果通知。
 //
 // 【特性】
 //   - 重複保護:建立前會檢查 Epic 下是否已有同名工單,避免重複建單
 //   - Reporter 自動帶入:不指定 reporter,Jira 會自動用 API token 擁有者
 //   - 通知解耦:本 class 不關心通知怎麼長、用哪個平台,
-//             由外部注入 notifier 和 template 控制(策略模式)
+//             由外部注入 notifier 和 messageTemplate 控制(策略模式)
 //
 // 【依賴】
 //   - JiraIdentityLib(必填,取得 Jira URL 與 admin 認證)
@@ -21,7 +21,7 @@
 // 【API 概覽】
 // ==========================================================================
 //
-//   new QuarterlyTicketCreator({ jiraEnv, config, notifier?, template? })
+//   new QuarterlyTicketCreator({ jiraEnv, config, notifier?, messageTemplate? })
 //
 //   creator.createForQuarter(quarterTag, mode?)  ← 建立指定季度的會議單
 //   creator.getCurrentQuarterTag()               ← 取得「現在這一季」的 tag
@@ -42,7 +42,7 @@
 //                                }
 //   notifier    {Object}  選填  NotifyLib 建立的 notifier 實例
 //                                沒提供就不會發通知(只 log)
-//   template    {Object}  選填  MessageTemplate 子類實例,用來渲染通知
+//   messageTemplate {Object}  選填  MessageTemplate 子類實例,用來渲染通知
 //                                沒提供也不會發通知
 //
 // ==========================================================================
@@ -56,13 +56,13 @@ class QuarterlyTicketCreator {
    * @param {Object} opts.config     - 會議單設定 { parentEpic, projectKey, issueType, titles }
    * @param {Object} opts.headers    - 開單用的 auth headers(必填),由外部決定用哪個帳號
    * @param {Object} [opts.notifier] - 通知器(NotifyLib 提供),沒提供就不發通知
-   * @param {Object} [opts.template] - 訊息樣板,沒提供就不發通知
+   * @param {Object} [opts.messageTemplate] - 訊息樣板,沒提供就不發通知
    */
-  constructor({ jiraEnv, config, notifier, template, headers }) {
+  constructor({ jiraEnv, config, notifier, messageTemplate, headers }) {
     this.jira = jiraEnv;
     this.config = config;
     this.notifier = notifier || null;
-    this.template = template || null;
+    this.messageTemplate = messageTemplate || null;
     this.domain = jiraEnv.getJiraUrl();
     // headers 由外部傳入,決定用哪個帳號開單(必填)
     this.headers = headers;
@@ -179,18 +179,18 @@ class QuarterlyTicketCreator {
   // ------------------------------------------------------------------------
 
   /**
-   * 統一通知入口:用 template 渲染 → 用 notifier 發送
-   * 沒有注入 notifier/template 就略過(只 log)
+   * 統一通知入口:用 messageTemplate 渲染 → 用 notifier 發送
+   * 沒有注入 notifier/messageTemplate 就略過(只 log)
    * @private
    */
   _notify(quarterTag, mode, results) {
-    if (!this.notifier || !this.template) {
-      Logger.log('⚠ 未注入 notifier 或 template,略過通知');
+    if (!this.notifier || !this.messageTemplate) {
+      Logger.log('⚠ 未注入 notifier 或 messageTemplate,略過通知');
       return;
     }
 
     try {
-      const message = this.template.render({
+      const message = this.messageTemplate.render({
         quarterTag: quarterTag,
         mode: mode,
         jiraDomain: this.domain,
