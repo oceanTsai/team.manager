@@ -1,11 +1,11 @@
 const H = require('../helpers');
 H.installGasStubs();
 
-let SENT=[], PROPS={}, chatThrows=false;
+let SENT=[], PROPS={}, chatThrows=false, chatSendFails=false;
 global.Notify = {
   getMessageTemplateClass: () => class { render(){ throw new Error('必須實作') } },
   createChatNotifier: url => { if (chatThrows) throw new Error('webhook 掛了');
-    return { sendCard: m => { SENT.push({url,m}); return true } } },
+    return { sendCard: m => { SENT.push({url,m}); return !chatSendFails } } },
 };
 global.PropertiesService = { getScriptProperties: () => ({ getProperty: k => PROPS[k] || null }) };
 global.SPRINT_OPTIONS = { sprintRootFolderId:'ROOT456' };
@@ -96,6 +96,12 @@ threw=false; PROPS={RETRO_CHAT_WEBHOOK_URL:'u'}; chatThrows=true;
 try { fn('reminderTask','提醒', new Error('原始錯誤')) } catch(e){ threw=true }
 check('發送失敗:不拋錯', threw, false);
 check('有記錄通知本身失敗', H.getLog().some(l=>l.includes('失敗通知本身也失敗')), true);
+
+chatThrows=false; chatSendFails=true; SENT=[]; H.resetLog();
+PROPS={RETRO_CHAT_WEBHOOK_URL:'chat://personal'};
+fn('publishTask','發布回顧表單', new Error('原始錯誤'));
+check('sendCard 回傳 false(不拋錯):有記錄安全網本身也發不出去', H.getLog().some(l=>l.includes('失敗通知本身也送不出去')), true);
+chatSendFails=false;
 
 console.log(`\n========== ${pass} 通過 / ${fail} 失敗 ==========`);
 process.exit(fail===0?0:1);

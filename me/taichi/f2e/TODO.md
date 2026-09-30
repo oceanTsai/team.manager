@@ -13,26 +13,32 @@
 - `scrum/retrospective` 已完成重構：拆成單一職責的類別、依賴由建構子注入
 - `node me/taichi/f2e/test/run.js` 全部通過，共 99 個檢查（4 組，含新加的 `test/retrospective/prepareRetro.test.js`，覆蓋 B 的過期檢查與 A 的查詢次數）
 - **尚未部署**——`me/` 底下沒有任何 `.clasp.json`
+- G 項目（通知失敗處理）已盤查並修好唯一的真正 bug（`FailureNotifier` 安全網本身失敗時謊報成功），其餘延伸想法列成 4 個 ISSUE 延後處理（見下方一、G 段落）
 - M 項目（建構子欄位存放方式）已定案並處理完：`SprintFolderBuilder`、`QuarterlyTicketCreator`、`WorklogMigrator` 這 3 個建構子參數超過 3 個的類別，統一改成 `constructor(option) { this._option = {...} }`（逐欄位明寫，不用展開語法）；順便發現並修掉 `QuarterlyTicketCreator` 的 `jiraEnv` 是死欄位（只用到 `getJiraUrl()`），改成呼叫端直接傳 `domain` 字串進來，不用整個 `jiraEnv` 服務物件。`WorklogMigrator` 的 `jiraEnv` 因為有動態呼叫 `getUser()`，維持整包注入。詳細討論記錄見下方「已定案的設計決策」第 10 條
 
 ---
 
 ## 一、`library`（跨專案）
 
-### G. 通知發送失敗被吞掉 🔴
+### G. 通知發送失敗被吞掉
 
-**位置**：`library/notify-lib/Notifier.js` 第 88 行
+盤查過整條通知失敗路徑後，判斷原則是：**錯誤如果是「webhook 呼叫本身失敗」，就只能記 log（沒有別的管道可以通知這件事）；如果是其他原因（業務邏輯、外部 API 等），才需要視情境決定，但本質上都可以是「log + Chat 通知說明發生什麼錯誤」。**
 
-```js
-} catch (e) {
-  Logger.log(...);
-  return false;    // 只寫 log，不拋錯
-}
-```
+照這個原則盤查 4 條路徑，只有 1 條是真正的 bug，已修好：
 
-webhook 失效時流程照常走完，但**沒有人收到通知，也不會有錯誤**。
+- ✅ **`FailureNotifier.notify()`（`scrum/retrospective/FailureNotifier.js`）——已修**。原本不管 `sendCard()` 回傳什麼都寫死 `sent = true`，log 也騙人說已發送；改成老實接住回傳值，依實際結果分開記 log。這個類別是整個回顧流程的安全網（所有 catch 區塊失敗都靠它通知），原本的 bug 會導致「安全網本身失效時，沒有任何痕跡能看出安全網也壞了」。已補測試(`test/retrospective/notify.test.js`，模擬 `sendCard` 回傳 `false` 但不拋錯的情況，這正是原本沒被測到的分支)
+- ✅ `ReminderNotifier`（送失敗）——已經只記 log，行為正確，符合原則
+- ✅ `ReminderNotifier`（webhook 沒設定）——會 `throw`，被外層 catch 轉給 `FailureNotifier`，`FailureNotifier` 讀到同一個屬性仍未設定時只記 log、不重試，不會循環
+- ✅ `QuarterlyTicketCreator._notify()`——webhook 失敗記 log、業務邏輯失敗也是「log + Chat 通知」，符合原則
 
-**影響範圍**：`notify-lib` 是共用 library，牽動 `scrum/retrospective` 與 `jira/quarterly-tickets`。要改就是跨專案改動。
+**其餘延伸想法列為 ISSUE，先不處理，等 J/K（部署設定）完成、程式能實際運作後再回頭補：**
+
+| ISSUE | 位置 | 內容 |
+|---|---|---|
+| 1 | `scrum/retrospective/ReminderNotifier.js` | `notifyCreated`/`notifyPublished`/`notifyReminder` 沒有 `return` 送出結果，呼叫端拿不到「有沒有發送成功」 |
+| 2 | 跨專案 | 失敗記錄目前只靠 `Logger.log`，執行完就查不到，考慮記到 Google Sheet 才能持久保存、事後查詢 |
+| 3 | 跨專案 | 失敗時目前只有 Chat 一個管道，webhook 本身失效時沒有備援（email 或 Slack），要另外設計 |
+| 4 | `jira/quarterly-tickets` | 沒有像 `FailureNotifier` 這樣的安全網，webhook 失效時比 retrospective 少一層保護 |
 
 ---
 
@@ -113,9 +119,9 @@ webhook 失效時流程照常走完，但**沒有人收到通知，也不會有�
 
 ## 建議的處理順序
 
-1. **G**（影響最廣，通知靜默失敗）
-2. **J → K**（部署設定，做完才能真的上線）
-3. **三**（未審查的專案，建議一個一個過）
+1. **J → K**（部署設定，做完才能真的上線）
+2. **三**（未審查的專案，建議一個一個過）
+3. G 段落的 4 個 ISSUE（延後到 J/K 完成、程式能實際運作後再處理）
 
 ## 怎麼跑測試
 

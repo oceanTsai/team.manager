@@ -49,7 +49,7 @@ class FailureNotifier {
     let sent = false;
 
     if (this._webhookUrl) {
-      Notify.createChatNotifier(this._webhookUrl).sendCard({
+      sent = Notify.createChatNotifier(this._webhookUrl).sendCard({
         title:    `❌ 回顧流程失敗:${description}`,
         subtitle: error.message,
         fields: [
@@ -59,8 +59,11 @@ class FailureNotifier {
         ],
         actions: this._buildActions(),
       });
-      sent = true;
-      Logger.log(`📩 已發送失敗通知:${functionName}`);
+      if (sent) {
+        Logger.log(`📩 已發送失敗通知:${functionName}`);
+      } else {
+        Logger.log(`⚠️ 失敗通知本身也送不出去:${functionName}(webhook 呼叫失敗)`);
+      }
     } else {
       Logger.log('⚠️ 未設定 RETRO_CHAT_WEBHOOK_URL,無法發送失敗通知');
     }
